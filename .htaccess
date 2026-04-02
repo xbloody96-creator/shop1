@@ -1,0 +1,35 @@
+# ============================================
+# МАГАЗИН — Apache Configuration
+# ============================================
+
+Options -Indexes
+Options +FollowSymLinks
+
+# Защита системных файлов
+<FilesMatch "\.(sql|log|md|env)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Защита папки includes
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Блокируем прямой доступ к includes
+    RewriteRule ^includes/ - [F,L]
+
+    # Блокируем прямой доступ к uploads через PHP
+    RewriteCond %{REQUEST_FILENAME} \.php$
+    RewriteRule ^uploads/ - [F,L]
+</IfModule>
+
+# Кодировка по умолчанию
+AddDefaultCharset UTF-8
+
+# PHP настройки (если разрешены через .htaccess)
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+    php_value max_execution_time 60
+    php_value session.cookie_httponly 1
+</IfModule>
