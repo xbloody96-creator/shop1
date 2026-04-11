@@ -1,72 +1,143 @@
 <?php
+/**
+ * Страница регистрации нового пользователя
+ * 
+ * @package Shop
+ */
+
 require_once __DIR__ . '/includes/auth.php';
-if (isLoggedIn()) { header('Location: /shop/profile.php'); exit; }
+
+// Если пользователь уже авторизован — перенаправляем в профиль
+if (isLoggedIn()) {
+    header('Location: /shop/profile.php');
+    exit;
+}
 
 $errors = [];
-$fields = ['email'=>'', 'login'=>'', 'full_name'=>'', 'nickname'=>'', 'birthdate'=>'', 'gender'=>''];
+$fields = [
+    'email'      => '',
+    'login'      => '',
+    'full_name'  => '',
+    'nickname'   => '',
+    'birthdate'  => '',
+    'gender'     => ''
+];
 
+// Обработка формы регистрации
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    foreach ($fields as $k => $_) $fields[$k] = trim($_POST[$k] ?? '');
-    $password  = $_POST['password'] ?? '';
-    $password2 = $_POST['password_confirm'] ?? '';
+    // Получаем и очищаем данные формы
+    foreach ($fields as $key => $value) {
+        $fields[$key] = trim($_POST[$key] ?? '');
+    }
+    
+    $password     = $_POST['password'] ?? '';
+    $passwordConf = $_POST['password_confirm'] ?? '';
 
-    // Валидация
-    if (!filter_var($fields['email'], FILTER_VALIDATE_EMAIL)) $errors['email'] = 'Некорректный email';
-    if (strlen($fields['login']) < 3) $errors['login'] = 'Логин минимум 3 символа';
-    if (empty($fields['full_name'])) $errors['full_name'] = 'Введите ФИО';
-    if (strlen($fields['nickname']) < 2) $errors['nickname'] = 'Никнейм минимум 2 символа';
+    // Валидация полей
+    if (!filter_var($fields['email'], FILTER_VALIDATE_EMAIL)) {
+        $errors['email'] = 'Некорректный email';
+    }
+    
+    if (strlen($fields['login']) < 3) {
+        $errors['login'] = 'Логин должен содержать минимум 3 символа';
+    }
+    
+    if (empty($fields['full_name'])) {
+        $errors['full_name'] = 'Введите ФИО';
+    }
+    
+    if (strlen($fields['nickname']) < 2) {
+        $errors['nickname'] = 'Никнейм должен содержать минимум 2 символа';
+    }
 
+    // Проверка даты рождения
     if (!empty($fields['birthdate'])) {
-        $bd = strtotime($fields['birthdate']);
-        if (!$bd || $bd > time()) $errors['birthdate'] = 'Некорректная дата';
-        elseif ($bd < strtotime('1940-01-01')) $errors['birthdate'] = 'Дата не ранее 1940 года';
+        $bdTimestamp = strtotime($fields['birthdate']);
+        if (!$bdTimestamp || $bdTimestamp > time()) {
+            $errors['birthdate'] = 'Некорректная дата рождения';
+        } elseif ($bdTimestamp < strtotime('1940-01-01')) {
+            $errors['birthdate'] = 'Дата рождения должна быть не ранее 1940 года';
+        }
     } else {
         $errors['birthdate'] = 'Введите дату рождения';
     }
 
-    if (empty($fields['gender'])) $errors['gender'] = 'Выберите пол';
-    if (strlen($password) < 6) $errors['password'] = 'Пароль минимум 6 символов';
-    if ($password !== $password2) $errors['password_confirm'] = 'Пароли не совпадают';
+    if (empty($fields['gender'])) {
+        $errors['gender'] = 'Выберите пол';
+    }
+    
+    if (strlen($password) < 6) {
+        $errors['password'] = 'Пароль должен содержать минимум 6 символов';
+    }
+    
+    if ($password !== $passwordConf) {
+        $errors['password_confirm'] = 'Пароли не совпадают';
+    }
 
-    // Уникальность
+    // Проверка уникальности email, логина и никнейма
     if (empty($errors['email'])) {
-        $s = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $s->execute([$fields['email']]);
-        if ($s->fetch()) $errors['email'] = 'Этот email уже зарегистрирован';
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$fields['email']]);
+        if ($stmt->fetch()) {
+            $errors['email'] = 'Этот email уже зарегистрирован';
+        }
     }
+    
     if (empty($errors['login'])) {
-        $s = $pdo->prepare("SELECT id FROM users WHERE login = ?");
-        $s->execute([$fields['login']]);
-        if ($s->fetch()) $errors['login'] = 'Этот логин уже занят';
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE login = ?");
+        $stmt->execute([$fields['login']]);
+        if ($stmt->fetch()) {
+            $errors['login'] = 'Этот логин уже занят';
+        }
     }
+    
     if (empty($errors['nickname'])) {
-        $s = $pdo->prepare("SELECT id FROM users WHERE nickname = ?");
-        $s->execute([$fields['nickname']]);
-        if ($s->fetch()) $errors['nickname'] = 'Этот никнейм уже занят';
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE nickname = ?");
+        $stmt->execute([$fields['nickname']]);
+        if ($stmt->fetch()) {
+            $errors['nickname'] = 'Этот никнейм уже занят';
+        }
     }
 
-    // Аватар
+    // Загрузка аватара
     $avatarName = 'default_avatar.png';
     if (!empty($_FILES['avatar']['name'])) {
-        $ext  = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
-        $allowed = ['jpg','jpeg','png','gif','webp'];
-        if (!in_array($ext, $allowed)) {
+        $fileExtension = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (!in_array($fileExtension, $allowedExtensions)) {
             $errors['avatar'] = 'Разрешены только изображения (jpg, png, gif, webp)';
         } elseif ($_FILES['avatar']['size'] > 2 * 1024 * 1024) {
-            $errors['avatar'] = 'Файл не должен превышать 2 МБ';
+            $errors['avatar'] = 'Размер файла не должен превышать 2 МБ';
         } else {
-            $avatarName = 'avatar_' . uniqid() . '.' . $ext;
+            $avatarName = 'avatar_' . uniqid() . '.' . $fileExtension;
             $uploadDir  = __DIR__ . '/uploads/avatars/';
-            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+            
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            
             move_uploaded_file($_FILES['avatar']['tmp_name'], $uploadDir . $avatarName);
             $avatarName = 'avatars/' . $avatarName;
         }
     }
 
+    // Если ошибок нет — создаём пользователя
     if (empty($errors)) {
-        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        
         $stmt = $pdo->prepare("INSERT INTO users (email, login, full_name, nickname, birthdate, gender, password, avatar) VALUES (?,?,?,?,?,?,?,?)");
-        $stmt->execute([$fields['email'], $fields['login'], $fields['full_name'], $fields['nickname'], $fields['birthdate'], $fields['gender'], $hash, $avatarName]);
+        $stmt->execute([
+            $fields['email'],
+            $fields['login'],
+            $fields['full_name'],
+            $fields['nickname'],
+            $fields['birthdate'],
+            $fields['gender'],
+            $passwordHash,
+            $avatarName
+        ]);
+        
         header('Location: /shop/login.php?registered=1');
         exit;
     }
