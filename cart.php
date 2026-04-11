@@ -1,3 +1,9 @@
+/**
+ * Файл: cart.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
 /**
  * Страница корзины покупок
@@ -6,6 +12,7 @@
  * позволяет изменять количество и удалять позиции.
  */
 
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 requireLogin(); // Проверяем, что пользователь авторизован
 
@@ -48,11 +55,13 @@ foreach ($cartItems as $item) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_cart_id'])) {
     $cartItemId = (int)$_POST['remove_cart_id'];
     
-    $deleteStmt = $pdo->prepare("DELETE FROM cart WHERE id = ? AND user_id = ?");
+    $deleteStmt = // SQL Запрос: удаление данных
+    $pdo->prepare("DELETE FROM cart WHERE id = ? AND user_id = ?");
     $deleteStmt->execute([$cartItemId, $userId]);
     
     // Перенаправляем на эту же страницу, чтобы обновить данные
-    header('Location: /shop/cart.php');
+    // Перенаправление пользователя
+header('Location: /shop/cart.php');
     exit;
 }
 

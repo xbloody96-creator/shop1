@@ -1,4 +1,11 @@
+/**
+ * Файл: profile.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 requireLogin();
 
@@ -6,29 +13,34 @@ $userId = $_SESSION['user_id'];
 $user   = getCurrentUser();
 
 // Заказы
-$orders = $pdo->prepare("SELECT o.*, (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as items_count FROM orders o WHERE o.user_id = ? ORDER BY o.created_at DESC LIMIT 10");
+$orders = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT o.*, (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as items_count FROM orders o WHERE o.user_id = ? ORDER BY o.created_at DESC LIMIT 10");
 $orders->execute([$userId]);
 $orderList = $orders->fetchAll();
 
 // История просмотров
-$history = $pdo->prepare("SELECT p.*, vh.viewed_at FROM view_history vh JOIN products p ON vh.product_id = p.id WHERE vh.user_id = ? ORDER BY vh.viewed_at DESC LIMIT 8");
+$history = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT p.*, vh.viewed_at FROM view_history vh JOIN products p ON vh.product_id = p.id WHERE vh.user_id = ? ORDER BY vh.viewed_at DESC LIMIT 8");
 $history->execute([$userId]);
 $viewHistory = $history->fetchAll();
 
 // Избранное
-$favs = $pdo->prepare("SELECT p.* FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? ORDER BY f.added_at DESC LIMIT 8");
+$favs = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT p.* FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? ORDER BY f.added_at DESC LIMIT 8");
 $favs->execute([$userId]);
 $favorites = $favs->fetchAll();
 
 // Сессии
-$sessions = $pdo->prepare("SELECT * FROM user_sessions WHERE user_id = ? ORDER BY last_active DESC LIMIT 5");
+$sessions = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT * FROM user_sessions WHERE user_id = ? ORDER BY last_active DESC LIMIT 5");
 $sessions->execute([$userId]);
 $sessionList = $sessions->fetchAll();
 
 // Выход
 if (isset($_GET['logout'])) {
     logoutUser();
-    header('Location: /shop/login.php');
+    // Перенаправление пользователя
+header('Location: /shop/login.php');
     exit;
 }
 

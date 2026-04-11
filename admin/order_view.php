@@ -1,12 +1,21 @@
+/**
+ * Файл: order_view.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 $id = (int)($_GET['id']??0);
-$stmt = $pdo->prepare("SELECT o.*, u.full_name as uname, u.email as uemail, u.nickname FROM orders o JOIN users u ON o.user_id=u.id WHERE o.id=?");
+$stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT o.*, u.full_name as uname, u.email as uemail, u.nickname FROM orders o JOIN users u ON o.user_id=u.id WHERE o.id=?");
 $stmt->execute([$id]);
 $order = $stmt->fetch();
-if (!$order) { header('Location: /shop/admin/orders.php'); exit; }
+if (!$order) { // Перенаправление пользователя
+header('Location: /shop/admin/orders.php'); exit; }
 
-$items = $pdo->prepare("SELECT oi.*, p.name, p.main_image FROM order_items oi JOIN products p ON oi.product_id=p.id WHERE oi.order_id=?");
+$items = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT oi.*, p.name, p.main_image FROM order_items oi JOIN products p ON oi.product_id=p.id WHERE oi.order_id=?");
 $items->execute([$id]);
 $orderItems = $items->fetchAll();
 
@@ -19,6 +28,7 @@ $statusLabels = [
 ];
 
 if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['status'])) {
+    // SQL Запрос: обновление данных
     $pdo->prepare("UPDATE orders SET status=? WHERE id=?")->execute([$_POST['status'], $id]);
     header("Location: /shop/admin/order_view.php?id=$id&saved=1"); exit;
 }

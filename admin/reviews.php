@@ -1,13 +1,23 @@
+/**
+ * Файл: reviews.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 // Одобрить / удалить
 if (isset($_GET['approve'])) {
+    // SQL Запрос: обновление данных
     $pdo->prepare("UPDATE reviews SET is_approved=1 WHERE id=?")->execute([(int)$_GET['approve']]);
-    header('Location: /shop/admin/reviews.php'); exit;
+    // Перенаправление пользователя
+header('Location: /shop/admin/reviews.php'); exit;
 }
 if (isset($_GET['delete'])) {
+    // SQL Запрос: удаление данных
     $pdo->prepare("DELETE FROM reviews WHERE id=?")->execute([(int)$_GET['delete']]);
-    header('Location: /shop/admin/reviews.php'); exit;
+    // Перенаправление пользователя
+header('Location: /shop/admin/reviews.php'); exit;
 }
 
 $filter = isset($_GET['pending']) ? 'WHERE r.is_approved=0' : 'WHERE 1';

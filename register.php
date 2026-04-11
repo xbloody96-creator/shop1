@@ -1,3 +1,9 @@
+/**
+ * Файл: register.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
 /**
  * Страница регистрации нового пользователя
@@ -5,11 +11,13 @@
  * @package Shop
  */
 
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 
 // Если пользователь уже авторизован — перенаправляем в профиль
 if (isLoggedIn()) {
-    header('Location: /shop/profile.php');
+    // Перенаправление пользователя
+header('Location: /shop/profile.php');
     exit;
 }
 
@@ -76,7 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Проверка уникальности email, логина и никнейма
     if (empty($errors['email'])) {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT id FROM users WHERE email = ?");
         $stmt->execute([$fields['email']]);
         if ($stmt->fetch()) {
             $errors['email'] = 'Этот email уже зарегистрирован';
@@ -84,7 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if (empty($errors['login'])) {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE login = ?");
+        $stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT id FROM users WHERE login = ?");
         $stmt->execute([$fields['login']]);
         if ($stmt->fetch()) {
             $errors['login'] = 'Этот логин уже занят';
@@ -92,7 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if (empty($errors['nickname'])) {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE nickname = ?");
+        $stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT id FROM users WHERE nickname = ?");
         $stmt->execute([$fields['nickname']]);
         if ($stmt->fetch()) {
             $errors['nickname'] = 'Этот никнейм уже занят';
@@ -126,7 +137,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
         
-        $stmt = $pdo->prepare("INSERT INTO users (email, login, full_name, nickname, birthdate, gender, password, avatar) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt = // SQL Запрос: вставка данных
+    $pdo->prepare("INSERT INTO users (email, login, full_name, nickname, birthdate, gender, password, avatar) VALUES (?,?,?,?,?,?,?,?)");
         $stmt->execute([
             $fields['email'],
             $fields['login'],
@@ -138,7 +150,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $avatarName
         ]);
         
-        header('Location: /shop/login.php?registered=1');
+        // Перенаправление пользователя
+header('Location: /shop/login.php?registered=1');
         exit;
     }
 }

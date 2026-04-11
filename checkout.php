@@ -1,3 +1,9 @@
+/**
+ * Файл: checkout.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
 /**
  * Страница оформления заказа (Checkout)
@@ -6,6 +12,7 @@
  * создаёт новый заказ в базе данных.
  */
 
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 requireLogin(); // Требуется авторизация
 
@@ -27,7 +34,8 @@ $cartItems = $stmt->fetchAll();
 
 // Проверяем, есть ли товары в корзине
 if (empty($cartItems)) {
-    header('Location: /shop/cart.php');
+    // Перенаправление пользователя
+header('Location: /shop/cart.php');
     exit;
 }
 
@@ -104,7 +112,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Очищаем корзину пользователя после успешного создания заказа
-            $clearCart = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+            $clearCart = // SQL Запрос: удаление данных
+    $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
             $clearCart->execute([$userId]);
             
             // Фиксируем транзакцию

@@ -1,3 +1,9 @@
+/**
+ * Файл: success.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
 /**
  * FreeKassa — Success URL
@@ -25,7 +31,8 @@ if ($orderId && $amount && $sign) {
 // Загружаем заказ
 $order = null;
 if ($orderId) {
-    $stmt = $pdo->prepare("SELECT o.*, u.full_name FROM orders o LEFT JOIN users u ON o.user_id=u.id WHERE o.id=?");
+    $stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT o.*, u.full_name FROM orders o LEFT JOIN users u ON o.user_id=u.id WHERE o.id=?");
     $stmt->execute([$orderId]);
     $order = $stmt->fetch();
 }

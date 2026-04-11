@@ -6,6 +6,7 @@
  * Поддерживает фильтры по категории, цене, наличию и различные варианты сортировки.
  */
 
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 
 // ============================================================================
@@ -125,7 +126,8 @@ $categories = $pdo->query($categoriesSql)->fetchAll();
 // Информация о текущей категории (если выбрана)
 $currentCategory = null;
 if ($categoryId > 0) {
-    $catStmt = $pdo->prepare("SELECT * FROM categories WHERE id = ?");
+    $catStmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT * FROM categories WHERE id = ?");
     $catStmt->execute([$categoryId]);
     $currentCategory = $catStmt->fetch();
 }

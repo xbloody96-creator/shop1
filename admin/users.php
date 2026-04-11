@@ -1,11 +1,19 @@
+/**
+ * Файл: users.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 if (isset($_GET['delete']) && (int)$_GET['delete']) {
-    $uid = (int)$_GET['delete'];
-    if ($uid !== (int)$_SESSION['user_id']) { // нельзя удалить себя
-        $pdo->prepare("DELETE FROM users WHERE id=? AND role='user'")->execute([$uid]);
+    $userId = (int)$_GET['delete'];
+    if ($userId !== (int)$_SESSION['user_id']) { // нельзя удалить себя
+        // SQL Запрос: удаление данных
+    $pdo->prepare("DELETE FROM users WHERE id=? AND role='user'")->execute([$userId]);
     }
-    header('Location: /shop/admin/users.php?deleted=1'); exit;
+    // Перенаправление пользователя
+header('Location: /shop/admin/users.php?deleted=1'); exit;
 }
 
 $users = $pdo->query("SELECT u.*, (SELECT COUNT(*) FROM orders WHERE user_id=u.id) as orders_count FROM users u ORDER BY u.created_at DESC")->fetchAll();

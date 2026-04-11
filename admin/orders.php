@@ -1,3 +1,9 @@
+/**
+ * Файл: orders.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 $statusFilter = $_GET['status'] ?? '';
@@ -5,7 +11,8 @@ $where  = '1';
 $params = [];
 if ($statusFilter) { $where = 'o.status=:st'; $params[':st'] = $statusFilter; }
 
-$stmt = $pdo->prepare("SELECT o.*, u.full_name, u.email as user_email FROM orders o JOIN users u ON o.user_id=u.id WHERE $where ORDER BY o.created_at DESC");
+$stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT o.*, u.full_name, u.email as user_email FROM orders o JOIN users u ON o.user_id=u.id WHERE $where ORDER BY o.created_at DESC");
 $stmt->execute($params);
 $orders = $stmt->fetchAll();
 
@@ -19,8 +26,10 @@ $statusLabels = [
 
 // Обновление статуса
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_id'], $_POST['status'])) {
+    // SQL Запрос: обновление данных
     $pdo->prepare("UPDATE orders SET status=? WHERE id=?")->execute([$_POST['status'], (int)$_POST['order_id']]);
-    header('Location: /shop/admin/orders.php?saved=1'); exit;
+    // Перенаправление пользователя
+header('Location: /shop/admin/orders.php?saved=1'); exit;
 }
 ?>
 

@@ -1,3 +1,9 @@
+/**
+ * Файл: login.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
 /**
  * Страница входа пользователя
@@ -5,11 +11,13 @@
  * @package Shop
  */
 
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 
 // Если пользователь уже авторизован — перенаправляем в профиль
 if (isLoggedIn()) {
-    header('Location: /shop/profile.php');
+    // Перенаправление пользователя
+header('Location: /shop/profile.php');
     exit;
 }
 
@@ -31,7 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Если ошибок нет, пытаемся авторизовать
     if (empty($errors)) {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? OR login = ? LIMIT 1");
+        $stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT * FROM users WHERE email = ? OR login = ? LIMIT 1");
         $stmt->execute([$email, $email]);
         $user = $stmt->fetch();
 
@@ -43,12 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
             $token = bin2hex(random_bytes(32));
             
-            $stmt = $pdo->prepare("INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent) VALUES (?,?,?,?)");
+            $stmt = // SQL Запрос: вставка данных
+    $pdo->prepare("INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent) VALUES (?,?,?,?)");
             $stmt->execute([$user['id'], $token, $ip, $ua]);
 
             // Перенаправление на страницу, с которой пришёл пользователь, или на главную
             $redirect = $_GET['redirect'] ?? '/shop/index.php';
-            header('Location: ' . $redirect);
+            // Перенаправление пользователя
+header('Location: ' . $redirect);
             exit;
         } else {
             $errors[] = 'Неверный email/логин или пароль';

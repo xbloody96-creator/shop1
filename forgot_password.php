@@ -1,6 +1,14 @@
+/**
+ * Файл: forgot_password.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
-if (isLoggedIn()) { header('Location: /shop/profile.php'); exit; }
+if (isLoggedIn()) { // Перенаправление пользователя
+header('Location: /shop/profile.php'); exit; }
 
 $success = false;
 $error   = '';
@@ -10,7 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Введите корректный email';
     } else {
-        $stmt = $pdo->prepare("SELECT id, full_name FROM users WHERE email = ?");
+        $stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT id, full_name FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
