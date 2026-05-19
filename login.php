@@ -1,65 +1,32 @@
-/**
- * Файл: login.php
- * Описание: Страница сайта
- * @version 1.0
- */
-
 <?php
-/**
- * Страница входа пользователя
- * 
- * @package Shop
- */
-
-// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
-
-// Если пользователь уже авторизован — перенаправляем в профиль
-if (isLoggedIn()) {
-    // Перенаправление пользователя
-header('Location: /shop/profile.php');
-    exit;
-}
+if (isLoggedIn()) { header('Location: /profile.php'); exit; }
 
 $errors = [];
 $email  = '';
 
-// Обработка формы входа
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    // Валидация входных данных
-    if (empty($email)) {
-        $errors[] = 'Введите email или логин';
-    }
-    if (empty($password)) {
-        $errors[] = 'Введите пароль';
-    }
+    if (empty($email)) $errors[] = 'Введите email или логин';
+    if (empty($password)) $errors[] = 'Введите пароль';
 
-    // Если ошибок нет, пытаемся авторизовать
     if (empty($errors)) {
-        $stmt = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT * FROM users WHERE email = ? OR login = ? LIMIT 1");
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? OR login = ? LIMIT 1");
         $stmt->execute([$email, $email]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
             loginUser($user);
-            
-            // Сохраняем информацию о сессии в БД для аудита
+            // Сохраняем сессию в таблицу
             $ip = $_SERVER['REMOTE_ADDR'] ?? '';
             $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
             $token = bin2hex(random_bytes(32));
-            
-            $stmt = // SQL Запрос: вставка данных
-    $pdo->prepare("INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent) VALUES (?,?,?,?)");
-            $stmt->execute([$user['id'], $token, $ip, $ua]);
+            $pdo->prepare("INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent) VALUES (?,?,?,?)")
+                ->execute([$user['id'], $token, $ip, $ua]);
 
-            // Перенаправление на страницу, с которой пришёл пользователь, или на главную
-            $redirect = $_GET['redirect'] ?? '/shop/index.php';
-            // Перенаправление пользователя
-header('Location: ' . $redirect);
+            header('Location: ' . ($_GET['redirect'] ?? '/index.php'));
             exit;
         } else {
             $errors[] = 'Неверный email/логин или пароль';
@@ -98,7 +65,7 @@ require_once __DIR__ . '/includes/header.php';
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.88rem">
           <input type="checkbox" name="remember"> Запомнить меня
         </label>
-        <a href="/shop/forgot_password.php" style="font-size:0.88rem;color:var(--accent2)">Забыли пароль?</a>
+        <a href="/forgot_password.php" style="font-size:0.88rem;color:var(--accent2)">Забыли пароль?</a>
       </div>
 
       <button type="submit" class="btn-primary">Войти</button>
@@ -106,7 +73,7 @@ require_once __DIR__ . '/includes/header.php';
 
     <p style="text-align:center;margin-top:20px;font-size:0.9rem;color:var(--text-muted)">
       Нет аккаунта? 
-      <a href="/shop/register.php" style="color:var(--accent2);font-weight:700">Зарегистрироваться</a>
+      <a href="/register.php" style="color:var(--accent2);font-weight:700">Зарегистрироваться</a>
     </p>
   </div>
 </div>

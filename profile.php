@@ -1,11 +1,4 @@
-/**
- * Файл: profile.php
- * Описание: Страница сайта
- * @version 1.0
- */
-
 <?php
-// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 requireLogin();
 
@@ -13,34 +6,29 @@ $userId = $_SESSION['user_id'];
 $user   = getCurrentUser();
 
 // Заказы
-$orders = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT o.*, (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as items_count FROM orders o WHERE o.user_id = ? ORDER BY o.created_at DESC LIMIT 10");
+$orders = $pdo->prepare("SELECT o.*, (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as items_count FROM orders o WHERE o.user_id = ? ORDER BY o.created_at DESC LIMIT 10");
 $orders->execute([$userId]);
 $orderList = $orders->fetchAll();
 
 // История просмотров
-$history = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT p.*, vh.viewed_at FROM view_history vh JOIN products p ON vh.product_id = p.id WHERE vh.user_id = ? ORDER BY vh.viewed_at DESC LIMIT 8");
+$history = $pdo->prepare("SELECT p.*, vh.viewed_at FROM view_history vh JOIN products p ON vh.product_id = p.id WHERE vh.user_id = ? ORDER BY vh.viewed_at DESC LIMIT 8");
 $history->execute([$userId]);
 $viewHistory = $history->fetchAll();
 
 // Избранное
-$favs = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT p.* FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? ORDER BY f.added_at DESC LIMIT 8");
+$favs = $pdo->prepare("SELECT p.* FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? ORDER BY f.added_at DESC LIMIT 8");
 $favs->execute([$userId]);
 $favorites = $favs->fetchAll();
 
 // Сессии
-$sessions = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT * FROM user_sessions WHERE user_id = ? ORDER BY last_active DESC LIMIT 5");
+$sessions = $pdo->prepare("SELECT * FROM user_sessions WHERE user_id = ? ORDER BY last_active DESC LIMIT 5");
 $sessions->execute([$userId]);
 $sessionList = $sessions->fetchAll();
 
 // Выход
 if (isset($_GET['logout'])) {
     logoutUser();
-    // Перенаправление пользователя
-header('Location: /shop/login.php');
+    header('Location: /login.php');
     exit;
 }
 
@@ -57,7 +45,7 @@ require_once __DIR__ . '/includes/header.php';
 
 <div class="container">
   <div class="breadcrumbs">
-    <a href="/shop/index.php">Главная</a> / <span>Личный кабинет</span>
+    <a href="/index.php">Главная</a> / <span>Личный кабинет</span>
   </div>
 
   <div class="profile-layout">
@@ -66,14 +54,14 @@ require_once __DIR__ . '/includes/header.php';
       <div class="profile-card">
         <?php
         $avatarPath = ($user['avatar'] && $user['avatar'] !== 'default_avatar.png')
-            ? '/shop/uploads/' . $user['avatar']
+            ? '/uploads/' . $user['avatar']
             : 'https://ui-avatars.com/api/?name=' . urlencode($user['full_name']) . '&size=100&background=e63946&color=fff';
         ?>
         <img src="<?= htmlspecialchars($avatarPath) ?>" alt="" class="profile-avatar">
         <div class="profile-name"><?= htmlspecialchars($user['full_name']) ?></div>
         <div class="profile-nick">@<?= htmlspecialchars($user['nickname']) ?></div>
         <div class="profile-email">✉️ <?= htmlspecialchars($user['email']) ?></div>
-        <a href="/shop/profile.php?logout=1" class="btn-secondary" style="display:block">Выйти из аккаунта</a>
+        <a href="/profile.php?logout=1" class="btn-secondary" style="display:block">Выйти из аккаунта</a>
       </div>
 
       <!-- Навигация -->
@@ -145,10 +133,10 @@ require_once __DIR__ . '/includes/header.php';
         <?php else: ?>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
           <?php foreach ($viewHistory as $item): ?>
-          <a href="/shop/product.php?id=<?= $item['id'] ?>" 
+          <a href="/product.php?id=<?= $item['id'] ?>" 
              style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);max-width:280px;transition:box-shadow 0.2s">
             <?php if ($item['main_image']): ?>
-            <img src="/shop/uploads/<?= htmlspecialchars($item['main_image']) ?>" 
+            <img src="/uploads/<?= htmlspecialchars($item['main_image']) ?>" 
                  style="width:48px;height:48px;object-fit:contain;border-radius:4px" alt="">
             <?php endif; ?>
             <div>
@@ -162,6 +150,38 @@ require_once __DIR__ . '/includes/header.php';
         </div>
         <?php endif; ?>
       </div>
+	  
+	  <!-- Секция 2FA -->
+<div class="profile-section">
+<h3>🔐 Двухфакторная аутентификация</h3>
+<p style="font-size:0.85rem;color:var(--text3);margin-bottom:16px">
+При входе потребуется код из email.
+</p>
+<?php
+$user = getCurrentUser();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_2fa'])) {
+    $action = $_POST['toggle_2fa'];
+    $userId = $_SESSION['user_id'];
+    if ($action === 'enable') {
+        $pdo->prepare("UPDATE users SET two_factor_enabled = 1 WHERE id = ?")->execute([$userId]);
+        echo '<div class="alert alert-success">✅ 2FA включена</div>';
+    } elseif ($action === 'disable') {
+        $pdo->prepare("UPDATE users SET two_factor_enabled = 0 WHERE id = ?")->execute([$userId]);
+        echo '<div class="alert alert-success">✅ 2FA отключена</div>';
+    }
+    $user = getCurrentUser(); // обновить данные
+}
+?>
+<form method="POST">
+<?php if ($user['two_factor_enabled']): ?>
+<span style="color:var(--success);font-weight:600">✓ Включено</span><br>
+<button type="submit" name="toggle_2fa" value="disable" class="btn-secondary" style="margin-top:10px;width:auto">🔓 Отключить</button>
+<?php else: ?>
+<span style="color:var(--text3)">✗ Выключено</span><br>
+<button type="submit" name="toggle_2fa" value="enable" class="btn-primary" style="margin-top:10px;width:auto">🔐 Включить</button>
+<?php endif; ?>
+</form>
+</div>
 
       <!-- Сессии -->
       <div class="profile-section" id="sessions">

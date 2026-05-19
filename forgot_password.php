@@ -1,14 +1,6 @@
-/**
- * Файл: forgot_password.php
- * Описание: Страница сайта
- * @version 1.0
- */
-
 <?php
-// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
-if (isLoggedIn()) { // Перенаправление пользователя
-header('Location: /shop/profile.php'); exit; }
+if (isLoggedIn()) { header('Location: /profile.php'); exit; }
 
 $success = false;
 $error   = '';
@@ -18,8 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Введите корректный email';
     } else {
-        $stmt = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT id, full_name FROM users WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT id, full_name FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -32,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['reset_user_id'] = $user['id'];
             $_SESSION['reset_expires'] = $expires;
 
-            $link    = "http://localhost/shop/reset_password.php?token=$token";
+            $link    = "http://localhost/reset_password.php?token=$token";
             $subject = 'Восстановление пароля — Магазин';
             $message = "Здравствуйте, {$user['full_name']}!\n\nДля сброса пароля перейдите по ссылке:\n$link\n\nСсылка действует 1 час.\n\nЕсли вы не запрашивали сброс, проигнорируйте это письмо.";
             @mail($email, $subject, $message, "From: noreply@magazin.ru\r\nContent-Type: text/plain; charset=UTF-8");
@@ -55,7 +46,7 @@ require_once __DIR__ . '/includes/header.php';
       Если указанный email зарегистрирован, на него отправлено письмо с инструкцией по восстановлению пароля.
     </div>
     <p style="text-align:center;margin-top:16px">
-      <a href="/shop/login.php" style="color:var(--accent2);font-weight:700">← Вернуться к входу</a>
+      <a href="/login.php" style="color:var(--accent2);font-weight:700">← Вернуться к входу</a>
     </p>
 
     <?php else: ?>
@@ -74,7 +65,7 @@ require_once __DIR__ . '/includes/header.php';
     </form>
 
     <p style="text-align:center;margin-top:16px;font-size:0.88rem">
-      <a href="/shop/login.php" style="color:var(--text-muted)">← Вернуться к входу</a>
+      <a href="/login.php" style="color:var(--text-muted)">← Вернуться к входу</a>
     </p>
     <?php endif; ?>
   </div>
