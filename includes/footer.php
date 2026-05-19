@@ -52,10 +52,38 @@
 </div>
 </footer>
 
+<!-- ─── КАРТА (ПЛАВАЮЩАЯ, СПРАВА СНИЗУ) ─── -->
+<div id="floating-map" style="position:fixed;bottom:20px;right:20px;width:320px;height:240px;z-index:1000;border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.3);border:3px solid var(--accent);background:#fff">
+    <div id="map" style="width:100%;height:100%"></div>
+</div>
+
 <div id="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999"></div>
 
 <!-- ─── ПОДКЛЮЧЕНИЕ MAIN.JS (ТЕМА + ДОСТУПНОСТЬ) ─── -->
 <script src="/assets/js/main.js"></script>
+
+<!-- ─── ЯНДЕКС КАРТА ─── -->
+<script src="https://api-maps.yandex.ru/2.1/?apikey=your-api-key&lang=ru_RU" type="text/javascript"></script>
+<script>
+ymaps.ready(init);
+function init(){
+    var myMap = new ymaps.Map("map", {
+        center: [55.751574, 37.573856], // Москва
+        zoom: 14,
+        controls: ['zoomControl', 'fullscreenControl']
+    });
+    
+    var myPlacemark = new ymaps.Placemark([55.751574, 37.573856], {
+        hintContent: 'Protech-no.ru',
+        balloonContent: 'г. Москва, ул. Примерная, 1'
+    }, {
+        preset: 'islands#redStoreIcon'
+    });
+    
+    myMap.geoObjects.add(myPlacemark);
+    myMap.behaviors.disable('scrollZoom');
+}
+</script>
 
 <!-- ─── СКРИПТЫ КОРЗИНЫ ─── -->
 <script>

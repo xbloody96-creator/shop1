@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/check_2fa.php';
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) { header('Location: /catalog.php'); exit; }
 
@@ -31,6 +32,7 @@ $similarProducts = $similar->fetchAll();
 
 // История
 if (isLoggedIn()) {
+    require2FAVerified();
     $pdo->prepare("DELETE FROM view_history WHERE user_id = ? AND product_id = ?")->execute([$_SESSION['user_id'], $id]);
     $pdo->prepare("INSERT INTO view_history (user_id, product_id) VALUES (?,?)")->execute([$_SESSION['user_id'], $id]);
 }
@@ -42,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['review_text'])) {
     if (!isLoggedIn()) {
         $reviewError = 'Войдите, чтобы оставить отзыв';
     } else {
+        require2FAVerified();
         $rating = min(5, max(1, (int)($_POST['rating'] ?? 5)));
         $text = trim($_POST['review_text'] ?? '');
         if (empty($text)) {

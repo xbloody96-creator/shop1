@@ -40,15 +40,18 @@ function loginUser(array $user): void {
     $_SESSION['user_role'] = $user['role'];
     $_SESSION['user_name'] = $user['full_name'];
     
-    // Если включена 2FA — не верифицируем сразу
+    // Если включена 2FA — устанавливаем pending флаг и перенаправляем на проверку
     if (needs2FA($user['id'])) {
         send2FACode($user['email'], $user['id']);
         $_SESSION['2fa_pending_user_id'] = $user['id'];
+        // НЕ устанавливаем 2fa_verified здесь!
         session_regenerate_id(true);
         header('Location: /2fa_verify.php');
         exit;
     } else {
+        // Если 2FA не нужна — сразу верифицируем
         $_SESSION['2fa_verified'] = true;
+        unset($_SESSION['2fa_pending_user_id']);
         session_regenerate_id(true);
     }
 }

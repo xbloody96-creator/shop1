@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/check_2fa.php';
 requireLogin();
+require2FAVerified();
 
 $stmt = $pdo->prepare("SELECT p.* FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? ORDER BY f.added_at DESC");
 $stmt->execute([$_SESSION['user_id']]);

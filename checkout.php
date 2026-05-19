@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/check_2fa.php';
 requireLogin();
+require2FAVerified();
 
 $userId = $_SESSION['user_id'];
 $user   = getCurrentUser();
@@ -31,12 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Некорректный email';
     if (empty($address)) $errors[] = 'Введите адрес доставки';
     
-    // Валидация телефона: только цифры, ровно 11 символов
+    // Валидация телефона: только цифры, ровно 12 символов
     $cleanPhone = preg_replace('/\D/', '', $phone);
     if (empty($cleanPhone)) {
         $errors[] = 'Введите номер телефона';
-    } elseif (strlen($cleanPhone) !== 11) {
-        $errors[] = 'Номер телефона должен содержать ровно 11 цифр';
+    } elseif (strlen($cleanPhone) !== 12) {
+        $errors[] = 'Номер телефона должен содержать ровно 12 цифр';
     }
     
     if (empty($errors)) {
@@ -446,9 +448,9 @@ require_once __DIR__ . '/includes/header.php';
             // Удаляем все нецифровые символы
             let value = e.target.value.replace(/\D/g, '');
             
-            // Ограничиваем до 11 символов
-            if (value.length > 11) {
-                value = value.substring(0, 11);
+            // Ограничиваем до 12 символов
+            if (value.length > 12) {
+                value = value.substring(0, 12);
             }
             
             // Форматируем номер
@@ -462,7 +464,7 @@ require_once __DIR__ . '/includes/header.php';
                         if (value.length > 7) {
                             formattedValue += '-' + value.substring(7, 9);
                             if (value.length > 9) {
-                                formattedValue += '-' + value.substring(9, 11);
+                                formattedValue += '-' + value.substring(9, 12);
                             }
                         }
                     }
@@ -491,7 +493,7 @@ require_once __DIR__ . '/includes/header.php';
         phoneInput.addEventListener('paste', function(e) {
             e.preventDefault();
             let text = e.clipboardData.getData('text');
-            let value = text.replace(/\D/g, '').substring(0, 11);
+            let value = text.replace(/\D/g, '').substring(0, 12);
             
             let formattedValue = '';
             if (value.length > 0) {
@@ -503,7 +505,7 @@ require_once __DIR__ . '/includes/header.php';
                         if (value.length > 7) {
                             formattedValue += '-' + value.substring(7, 9);
                             if (value.length > 9) {
-                                formattedValue += '-' + value.substring(9, 11);
+                                formattedValue += '-' + value.substring(9, 12);
                             }
                         }
                     }
