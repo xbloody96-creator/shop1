@@ -32,9 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Hero Slider ────────────────────────────
   const sliderContainer = document.querySelector('.slider-container');
   const slides         = document.querySelectorAll('.slide');
-  const dots           = document.querySelectorAll('.dot');
-  const prevBtn        = document.querySelector('.slider-arrow.prev');
-  const nextBtn        = document.querySelector('.slider-arrow.next');
+  const dots           = document.querySelectorAll('.slider-dot');
+  const prevBtn        = document.querySelector('.slider-prev');
+  const nextBtn        = document.querySelector('.slider-next');
   let   cur            = 0;
   let   autoPlay       = null;
   let   isTouch        = false;
