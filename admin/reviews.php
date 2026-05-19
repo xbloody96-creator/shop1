@@ -1,23 +1,13 @@
-/**
- * Файл: reviews.php
- * Описание: Страница сайта
- * @version 1.0
- */
-
 <?php require_once __DIR__ . '/header.php';
 
 // Одобрить / удалить
 if (isset($_GET['approve'])) {
-    // SQL Запрос: обновление данных
     $pdo->prepare("UPDATE reviews SET is_approved=1 WHERE id=?")->execute([(int)$_GET['approve']]);
-    // Перенаправление пользователя
-header('Location: /shop/admin/reviews.php'); exit;
+    header('Location: /admin/reviews.php'); exit;
 }
 if (isset($_GET['delete'])) {
-    // SQL Запрос: удаление данных
     $pdo->prepare("DELETE FROM reviews WHERE id=?")->execute([(int)$_GET['delete']]);
-    // Перенаправление пользователя
-header('Location: /shop/admin/reviews.php'); exit;
+    header('Location: /admin/reviews.php'); exit;
 }
 
 $filter = isset($_GET['pending']) ? 'WHERE r.is_approved=0' : 'WHERE 1';
@@ -44,7 +34,7 @@ $reviews = $pdo->query("SELECT r.*, u.full_name, p.name as product_name, p.id as
     <tr>
       <td><?= $r['id'] ?></td>
       <td><?= htmlspecialchars($r['full_name']) ?></td>
-      <td><a href="/shop/product.php?id=<?= $r['product_id'] ?>" target="_blank" style="color:var(--accent2)"><?= htmlspecialchars(mb_substr($r['product_name'],0,30)) ?></a></td>
+      <td><a href="/product.php?id=<?= $r['product_id'] ?>" target="_blank" style="color:var(--accent2)"><?= htmlspecialchars(mb_substr($r['product_name'],0,30)) ?></a></td>
       <td><span style="color:#f59e0b"><?= str_repeat('★',$r['rating']) ?><?= str_repeat('☆',5-$r['rating']) ?></span></td>
       <td style="max-width:200px;font-size:0.85rem"><?= htmlspecialchars(mb_substr($r['text'],0,80)) ?>...</td>
       <td style="font-size:0.82rem"><?= date('d.m.Y', strtotime($r['created_at'])) ?></td>

@@ -1,9 +1,3 @@
-/**
- * Файл: index.php
- * Описание: Страница сайта
- * @version 1.0
- */
-
 <?php require_once __DIR__ . '/header.php'; ?>
 
 <h1>📊 Статистика магазина</h1>
@@ -52,21 +46,21 @@ $statusLabels = [
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
     <h3 style="font-weight:700;margin-bottom:12px">⚡ Быстрые действия</h3>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <a href="/shop/admin/product_edit.php" class="btn-add" style="justify-content:center">➕ Добавить товар</a>
-      <a href="/shop/admin/news_edit.php"    class="btn-add" style="background:var(--accent2);justify-content:center">➕ Добавить новость</a>
-      <a href="/shop/admin/promotions.php"   class="btn-add" style="background:#16a34a;justify-content:center">➕ Добавить акцию</a>
+      <a href="/admin/product_edit.php" class="btn-add" style="justify-content:center">➕ Добавить товар</a>
+      <a href="/admin/news_edit.php"    class="btn-add" style="background:var(--accent2);justify-content:center">➕ Добавить новость</a>
+      <a href="/admin/promotions.php"   class="btn-add" style="background:#16a34a;justify-content:center">➕ Добавить акцию</a>
     </div>
   </div>
 
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
     <h3 style="font-weight:700;margin-bottom:12px">🔔 Уведомления</h3>
     <?php if ($pending > 0): ?>
-    <a href="/shop/admin/orders.php?status=pending" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);color:#d97706;font-weight:600;font-size:0.9rem">
+    <a href="/admin/orders.php?status=pending" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);color:#d97706;font-weight:600;font-size:0.9rem">
       ⏳ Новых заказов: <?= $pending ?>
     </a>
     <?php endif; ?>
     <?php if ($newReviews > 0): ?>
-    <a href="/shop/admin/reviews.php?pending=1" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);color:#2563eb;font-weight:600;font-size:0.9rem">
+    <a href="/admin/reviews.php?pending=1" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);color:#2563eb;font-weight:600;font-size:0.9rem">
       💬 Отзывов на модерации: <?= $newReviews ?>
     </a>
     <?php endif; ?>
@@ -90,10 +84,10 @@ $statusLabels = [
     <tbody>
       <?php foreach ($lowStock as $p): ?>
       <tr>
-        <td><?php if($p['main_image']): ?><img src="/shop/uploads/<?= htmlspecialchars($p['main_image']) ?>" alt=""><?php endif; ?></td>
+        <td><?php if($p['main_image']): ?><img src="/uploads/<?= htmlspecialchars($p['main_image']) ?>" alt=""><?php endif; ?></td>
         <td><?= htmlspecialchars($p['name']) ?></td>
         <td><strong style="color:#dc2626"><?= $p['stock'] ?> шт.</strong></td>
-        <td><a href="/shop/admin/product_edit.php?id=<?= $p['id'] ?>" class="btn-sm btn-edit">Редактировать</a></td>
+        <td><a href="/admin/product_edit.php?id=<?= $p['id'] ?>" class="btn-sm btn-edit">Редактировать</a></td>
       </tr>
       <?php endforeach; ?>
     </tbody>
@@ -118,7 +112,7 @@ $statusLabels = [
         <td><strong><?= number_format($o['total'],0,'', ' ') ?> ₽</strong></td>
         <td><span style="color:<?= $st[1] ?>;font-weight:600"><?= $st[0] ?></span></td>
         <td><?= date('d.m.Y H:i', strtotime($o['created_at'])) ?></td>
-        <td><a href="/shop/admin/order_view.php?id=<?= $o['id'] ?>" class="btn-sm btn-edit">Открыть</a></td>
+        <td><a href="/admin/order_view.php?id=<?= $o['id'] ?>" class="btn-sm btn-edit">Открыть</a></td>
       </tr>
       <?php endforeach; ?>
     </tbody>

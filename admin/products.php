@@ -1,26 +1,17 @@
-/**
- * Файл: products.php
- * Описание: Страница сайта
- * @version 1.0
- */
-
 <?php require_once __DIR__ . '/header.php';
 
 // Удаление
 if (isset($_GET['delete']) && (int)$_GET['delete']) {
-    $productId = (int)$_GET['delete'];
+    $pid = (int)$_GET['delete'];
     // Удаляем изображение
-    // SQL Запрос: выборка данных
-    $imageFile = $pdo->prepare("SELECT main_image FROM products WHERE id=?");
-    $imageFile->execute([$productId]);
-    $record = $imageFile->fetch();
-    if ($record['main_image'] && file_exists(__DIR__ . '/../uploads/' . $record['main_image'])) {
-        unlink(__DIR__ . '/../uploads/' . $record['main_image']);
+    $img = $pdo->prepare("SELECT main_image FROM products WHERE id=?");
+    $img->execute([$pid]);
+    $row = $img->fetch();
+    if ($row['main_image'] && file_exists(__DIR__ . '/../uploads/' . $row['main_image'])) {
+        unlink(__DIR__ . '/../uploads/' . $row['main_image']);
     }
-    // SQL Запрос: удаление данных
-    $pdo->prepare("DELETE FROM products WHERE id=?")->execute([$productId]);
-    // Перенаправление пользователя
-header('Location: /shop/admin/products.php?deleted=1'); exit;
+    $pdo->prepare("DELETE FROM products WHERE id=?")->execute([$pid]);
+    header('Location: /admin/products.php?deleted=1'); exit;
 }
 
 $page = max(1,(int)($_GET['page']??1));
@@ -34,17 +25,13 @@ if ($search) {
     $params[':s'] = '%'.$search.'%';
 }
 
-$total = (int)// SQL Запрос: выборка данных
-    $pdo->prepare("SELECT COUNT(*) FROM products p $where")->execute($params) ? // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT COUNT(*) FROM products p $where") : 0;
-$countStmt = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT COUNT(*) FROM products p $where");
+$total = (int)$pdo->prepare("SELECT COUNT(*) FROM products p $where")->execute($params) ? $pdo->prepare("SELECT COUNT(*) FROM products p $where") : 0;
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM products p $where");
 $countStmt->execute($params);
 $total = (int)$countStmt->fetchColumn();
 $totalPages = (int)ceil($total/$per);
 
-$stmt = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT p.*, c.name as cat FROM products p LEFT JOIN categories c ON p.category_id=c.id $where ORDER BY p.id DESC LIMIT :l OFFSET :o");
+$stmt = $pdo->prepare("SELECT p.*, c.name as cat FROM products p LEFT JOIN categories c ON p.category_id=c.id $where ORDER BY p.id DESC LIMIT :l OFFSET :o");
 foreach ($params as $k=>$v) $stmt->bindValue($k,$v);
 $stmt->bindValue(':l',$per,PDO::PARAM_INT);
 $stmt->bindValue(':o',$off,PDO::PARAM_INT);
@@ -54,7 +41,7 @@ $products = $stmt->fetchAll();
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
   <h1>📦 Товары (<?= $total ?>)</h1>
-  <a href="/shop/admin/product_edit.php" class="btn-add">➕ Добавить товар</a>
+  <a href="/admin/product_edit.php" class="btn-add">➕ Добавить товар</a>
 </div>
 
 <?php if (isset($_GET['deleted'])): ?><div class="alert alert-success">Товар удалён</div><?php endif; ?>
@@ -63,7 +50,7 @@ $products = $stmt->fetchAll();
 <form method="GET" action="" style="margin-bottom:16px;display:flex;gap:8px">
   <input type="text" name="s" value="<?= htmlspecialchars($search) ?>" class="form-control" placeholder="Поиск по названию..." style="max-width:300px">
   <button type="submit" class="btn-add" style="margin:0">Найти</button>
-  <?php if ($search): ?><a href="/shop/admin/products.php" style="align-self:center;color:var(--text-muted);font-size:0.85rem">✕ Сбросить</a><?php endif; ?>
+  <?php if ($search): ?><a href="/admin/products.php" style="align-self:center;color:var(--text-muted);font-size:0.85rem">✕ Сбросить</a><?php endif; ?>
 </form>
 
 <table class="admin-table">
@@ -82,7 +69,7 @@ $products = $stmt->fetchAll();
       <td><?= $p['id'] ?></td>
       <td>
         <?php if ($p['main_image']): ?>
-        <img src="/shop/uploads/<?= htmlspecialchars($p['main_image']) ?>" alt="">
+        <img src="/uploads/<?= htmlspecialchars($p['main_image']) ?>" alt="">
         <?php else: ?><span style="font-size:1.5rem">📦</span><?php endif; ?>
       </td>
       <td>
@@ -102,16 +89,16 @@ $products = $stmt->fetchAll();
       <td>
         <?php
         $active = (bool)$p['is_active'];
-        $toggleUrl = "/shop/admin/products.php?toggle={$p['id']}&val=" . ($active?0:1);
+        $toggleUrl = "/admin/products.php?toggle={$p['id']}&val=" . ($active?0:1);
         ?>
         <a href="<?= $toggleUrl ?>" style="font-size:1.2rem" title="<?= $active?'Скрыть':'Показать' ?>">
           <?= $active ? '✅' : '🚫' ?>
         </a>
       </td>
       <td style="white-space:nowrap">
-        <a href="/shop/admin/product_edit.php?id=<?= $p['id'] ?>" class="btn-sm btn-edit">✏ Ред.</a>
-        <a href="/shop/product.php?id=<?= $p['id'] ?>" target="_blank" class="btn-sm btn-edit" style="background:#f0fdf4;color:#166534">👁</a>
-        <a href="/shop/admin/products.php?delete=<?= $p['id'] ?>" class="btn-sm btn-delete js-confirm-delete">🗑</a>
+        <a href="/admin/product_edit.php?id=<?= $p['id'] ?>" class="btn-sm btn-edit">✏ Ред.</a>
+        <a href="/product.php?id=<?= $p['id'] ?>" target="_blank" class="btn-sm btn-edit" style="background:#f0fdf4;color:#166534">👁</a>
+        <a href="/admin/products.php?delete=<?= $p['id'] ?>" class="btn-sm btn-delete js-confirm-delete">🗑</a>
       </td>
     </tr>
     <?php endforeach; ?>
@@ -121,10 +108,8 @@ $products = $stmt->fetchAll();
 <?php
 // Toggle active
 if (isset($_GET['toggle']) && isset($_GET['val'])) {
-    // SQL Запрос: обновление данных
     $pdo->prepare("UPDATE products SET is_active=? WHERE id=?")->execute([(int)$_GET['val'], (int)$_GET['toggle']]);
-    // Перенаправление пользователя
-header('Location: /shop/admin/products.php'); exit;
+    header('Location: /admin/products.php'); exit;
 }
 ?>
 

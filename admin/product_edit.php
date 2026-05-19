@@ -1,9 +1,3 @@
-/**
- * Файл: product_edit.php
- * Описание: Страница сайта
- * @version 1.0
- */
-
 <?php require_once __DIR__ . '/header.php';
 
 $id      = (int)($_GET['id']??0);
@@ -12,20 +6,16 @@ $specs   = [];
 $gallery = [];
 
 if ($id) {
-    $s = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT * FROM products WHERE id=?");
+    $s = $pdo->prepare("SELECT * FROM products WHERE id=?");
     $s->execute([$id]);
     $product = $s->fetch();
-    if (!$product) { // Перенаправление пользователя
-header('Location: /shop/admin/products.php'); exit; }
+    if (!$product) { header('Location: /admin/products.php'); exit; }
 
-    $sp = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT * FROM product_specs WHERE product_id=? ORDER BY id");
+    $sp = $pdo->prepare("SELECT * FROM product_specs WHERE product_id=? ORDER BY id");
     $sp->execute([$id]);
     $specs = $sp->fetchAll();
 
-    $gi = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order");
+    $gi = $pdo->prepare("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order");
     $gi->execute([$id]);
     $gallery = $gi->fetchAll();
 }
@@ -71,26 +61,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         if ($id) {
-            // SQL Запрос: обновление данных
-    $pdo->prepare("UPDATE products SET name=?,slug=?,description=?,price=?,old_price=?,stock=?,category_id=?,main_image=?,is_popular=?,is_active=? WHERE id=?")
+            $pdo->prepare("UPDATE products SET name=?,slug=?,description=?,price=?,old_price=?,stock=?,category_id=?,main_image=?,is_popular=?,is_active=? WHERE id=?")
                 ->execute([$name,$slug,$description,$price,$oldPrice,$stock,$categoryId,$mainImage,$isPopular,$isActive,$id]);
         } else {
-            // SQL Запрос: вставка данных
-    $pdo->prepare("INSERT INTO products (name,slug,description,price,old_price,stock,category_id,main_image,is_popular,is_active) VALUES (?,?,?,?,?,?,?,?,?,?)")
+            $pdo->prepare("INSERT INTO products (name,slug,description,price,old_price,stock,category_id,main_image,is_popular,is_active) VALUES (?,?,?,?,?,?,?,?,?,?)")
                 ->execute([$name,$slug,$description,$price,$oldPrice,$stock,$categoryId,$mainImage,$isPopular,$isActive]);
             $id = (int)$pdo->lastInsertId();
         }
 
         // Характеристики — удаляем старые и вставляем новые
-        // SQL Запрос: удаление данных
-    $pdo->prepare("DELETE FROM product_specs WHERE product_id=?")->execute([$id]);
+        $pdo->prepare("DELETE FROM product_specs WHERE product_id=?")->execute([$id]);
         $specKeys = $_POST['spec_key']   ?? [];
         $specVals = $_POST['spec_value'] ?? [];
         foreach ($specKeys as $i => $k) {
             $k = trim($k); $v = trim($specVals[$i]??'');
             if ($k && $v) {
-                // SQL Запрос: вставка данных
-    $pdo->prepare("INSERT INTO product_specs (product_id,spec_key,spec_value) VALUES (?,?,?)")->execute([$id,$k,$v]);
+                $pdo->prepare("INSERT INTO product_specs (product_id,spec_key,spec_value) VALUES (?,?,?)")->execute([$id,$k,$v]);
             }
         }
 
@@ -104,20 +90,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!in_array($ext,['jpg','jpeg','png','webp','gif'])) continue;
                 $fname = 'gal_' . uniqid() . '.' . $ext;
                 if (move_uploaded_file($tmp, $uploadDir . $fname)) {
-                    // SQL Запрос: вставка данных
-    $pdo->prepare("INSERT INTO product_images (product_id,image,sort_order) VALUES (?,?,?)")->execute([$id,'products/'.$fname,$idx]);
+                    $pdo->prepare("INSERT INTO product_images (product_id,image,sort_order) VALUES (?,?,?)")->execute([$id,'products/'.$fname,$idx]);
                 }
             }
         }
 
-        header("Location: /shop/admin/products.php?saved=1"); exit;
+        header("Location: /admin/products.php?saved=1"); exit;
     }
 }
 ?>
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
   <h1><?= $id ? '✏ Редактировать товар' : '➕ Добавить товар' ?></h1>
-  <a href="/shop/admin/products.php" style="color:var(--text-muted);font-size:0.9rem">← Назад к списку</a>
+  <a href="/admin/products.php" style="color:var(--text-muted);font-size:0.9rem">← Назад к списку</a>
 </div>
 
 <?php foreach($errors as $e): ?><div class="alert alert-error"><?= htmlspecialchars($e) ?></div><?php endforeach; ?>
@@ -182,10 +167,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h3 style="font-weight:700;margin-bottom:16px">🖼 Галерея</h3>
         <?php if (!empty($gallery)): ?>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-          <?php foreach ($gallery as $imageFile): ?>
+          <?php foreach ($gallery as $img): ?>
           <div style="position:relative">
-            <img src="/shop/uploads/<?= htmlspecialchars($imageFile['image']) ?>" style="width:80px;height:80px;object-fit:contain;border:1px solid var(--border);border-radius:6px;padding:4px">
-            <a href="/shop/admin/product_edit.php?id=<?= $id ?>&del_img=<?= $imageFile['id'] ?>" 
+            <img src="/uploads/<?= htmlspecialchars($img['image']) ?>" style="width:80px;height:80px;object-fit:contain;border:1px solid var(--border);border-radius:6px;padding:4px">
+            <a href="/admin/product_edit.php?id=<?= $id ?>&del_img=<?= $img['id'] ?>" 
                style="position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;text-decoration:none">✕</a>
           </div>
           <?php endforeach; ?>
@@ -220,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="admin-form-card">
         <h3 style="font-weight:700;margin-bottom:16px">🖼 Главное фото</h3>
         <?php if (!empty($product['main_image'])): ?>
-        <img src="/shop/uploads/<?= htmlspecialchars($product['main_image']) ?>" id="admin-img-preview"
+        <img src="/uploads/<?= htmlspecialchars($product['main_image']) ?>" id="admin-img-preview"
              style="width:100%;max-height:200px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:12px;background:var(--surface2)">
         <?php else: ?>
         <img id="admin-img-preview" style="display:none;width:100%;max-height:200px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:12px">
@@ -245,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?= $id ? '💾 Сохранить изменения' : '➕ Добавить товар' ?>
       </button>
       <?php if ($id): ?>
-      <a href="/shop/product.php?id=<?= $id ?>" target="_blank" class="btn-secondary" style="text-align:center">👁 Просмотр на сайте</a>
+      <a href="/product.php?id=<?= $id ?>" target="_blank" class="btn-secondary" style="text-align:center">👁 Просмотр на сайте</a>
       <?php endif; ?>
     </div>
   </div>
@@ -270,16 +255,14 @@ document.getElementById('add-spec')?.addEventListener('click', () => {
 // Удаление фото из галереи
 if (isset($_GET['del_img'])) {
     $imgId = (int)$_GET['del_img'];
-    $imgRow = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT * FROM product_images WHERE id=? AND product_id=?");
+    $imgRow = $pdo->prepare("SELECT * FROM product_images WHERE id=? AND product_id=?");
     $imgRow->execute([$imgId, $id]);
     $imgData = $imgRow->fetch();
     if ($imgData) {
         if (file_exists(__DIR__ . '/../uploads/' . $imgData['image'])) unlink(__DIR__ . '/../uploads/' . $imgData['image']);
-        // SQL Запрос: удаление данных
-    $pdo->prepare("DELETE FROM product_images WHERE id=?")->execute([$imgId]);
+        $pdo->prepare("DELETE FROM product_images WHERE id=?")->execute([$imgId]);
     }
-    header("Location: /shop/admin/product_edit.php?id=$id"); exit;
+    header("Location: /admin/product_edit.php?id=$id"); exit;
 }
 ?>
 

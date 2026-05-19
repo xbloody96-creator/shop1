@@ -1,20 +1,12 @@
-/**
- * Файл: news_edit.php
- * Описание: Страница сайта
- * @version 1.0
- */
-
 <?php require_once __DIR__ . '/header.php';
 
 $id   = (int)($_GET['id']??0);
 $news = null;
 if ($id) {
-    $s = // SQL Запрос: выборка данных
-    $pdo->prepare("SELECT * FROM news WHERE id=?");
+    $s = $pdo->prepare("SELECT * FROM news WHERE id=?");
     $s->execute([$id]);
     $news = $s->fetch();
-    if (!$news) { // Перенаправление пользователя
-header('Location: /shop/admin/news.php'); exit; }
+    if (!$news) { header('Location: /admin/news.php'); exit; }
 }
 
 $errors = [];
@@ -40,21 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         if ($id) {
-            // SQL Запрос: обновление данных
-    $pdo->prepare("UPDATE news SET title=?,slug=?,content=?,image=?,is_active=? WHERE id=?")->execute([$title,$slug,$content,$image,$isActive,$id]);
+            $pdo->prepare("UPDATE news SET title=?,slug=?,content=?,image=?,is_active=? WHERE id=?")->execute([$title,$slug,$content,$image,$isActive,$id]);
         } else {
-            // SQL Запрос: вставка данных
-    $pdo->prepare("INSERT INTO news (title,slug,content,image,is_active) VALUES (?,?,?,?,?)")->execute([$title,$slug,$content,$image,$isActive]);
+            $pdo->prepare("INSERT INTO news (title,slug,content,image,is_active) VALUES (?,?,?,?,?)")->execute([$title,$slug,$content,$image,$isActive]);
         }
-        // Перенаправление пользователя
-header('Location: /shop/admin/news.php?saved=1'); exit;
+        header('Location: /admin/news.php?saved=1'); exit;
     }
 }
 ?>
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
   <h1><?= $id ? '✏ Редактировать новость' : '➕ Добавить новость' ?></h1>
-  <a href="/shop/admin/news.php" style="color:var(--text-muted)">← Назад</a>
+  <a href="/admin/news.php" style="color:var(--text-muted)">← Назад</a>
 </div>
 
 <?php foreach($errors as $e): ?><div class="alert alert-error"><?= htmlspecialchars($e) ?></div><?php endforeach; ?>
@@ -72,7 +61,7 @@ header('Location: /shop/admin/news.php?saved=1'); exit;
     <div class="form-group">
       <label>Изображение</label>
       <?php if (!empty($news['image'])): ?>
-      <img src="/shop/uploads/<?= htmlspecialchars($news['image']) ?>" style="max-height:160px;border-radius:8px;margin-bottom:8px;display:block">
+      <img src="/uploads/<?= htmlspecialchars($news['image']) ?>" style="max-height:160px;border-radius:8px;margin-bottom:8px;display:block">
       <?php endif; ?>
       <input type="file" name="image" class="form-control" accept="image/*">
     </div>
