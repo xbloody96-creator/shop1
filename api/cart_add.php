@@ -1,60 +1,78 @@
 <?php
-/**
- * Добавление товара в корзину
- * API endpoint для обработки AJAX-запросов
- * 
- * @package Shop
- */
-
 require_once __DIR__ . '/../includes/auth.php';
 header('Content-Type: application/json');
 
-// Проверяем авторизацию
+// Проверка авторизации
 if (!isLoggedIn()) {
-    echo json_encode(['ok' => false, 'redirect' => '/shop/login.php']);
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Требуется авторизация', 'redirect' => '/login.php']);
     exit;
 }
 
-// Получаем данные из запроса
-$inputData = json_decode(file_get_contents('php://input'), true);
-$productId = (int) ($inputData['product_id'] ?? 0);
-$quantity  = max(1, (int) ($inputData['quantity'] ?? 1));
+// Получение данных
+$method = $_SERVER['REQUEST_METHOD'];
+$action = $_POST['action'] ?? $_GET['action'] ?? 'add';
+$product_id = (int)($_POST['product_id'] ?? $_GET['product_id'] ?? 0);
+$quantity = max(1, (int)($_POST['quantity'] ?? 1));
 
-// Валидация ID товара
-if (!$productId) {
-    echo json_encode(['ok' => false, 'message' => 'Товар не найден']);
+// Валидация
+if ($product_id <= 0) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Неверный ID товара']);
     exit;
 }
 
-// Проверяем существование и активность товара
-$stmt = $pdo->prepare("SELECT id, stock FROM products WHERE id = ? AND is_active = 1");
-$stmt->execute([$productId]);
-$product = $stmt->fetch();
+// Проверка существования товара
+$check = $pdo->prepare("SELECT id, name, price, stock FROM products WHERE id = ? AND is_active = 1");
+$check->execute([$product_id]);
+$product = $check->fetch();
 
 if (!$product) {
-    echo json_encode(['ok' => false, 'message' => 'Товар не найден или не активен']);
+    http_response_code(404);
+    echo json_encode(['success' => false, 'error' => 'Товар не найден']);
     exit;
 }
 
-// Проверяем наличие товара в корзине
-$stmt = $pdo->prepare("SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?");
-$stmt->execute([$_SESSION['user_id'], $productId]);
-$cartItem = $stmt->fetch();
-
-if ($cartItem) {
-    // Товар уже есть — увеличиваем количество
-    $newQuantity = $cartItem['quantity'] + $quantity;
-    $stmt = $pdo->prepare("UPDATE cart SET quantity = ? WHERE id = ?");
-    $stmt->execute([$newQuantity, $cartItem['id']]);
-} else {
-    // Добавляем новый товар в корзину
-    $stmt = $pdo->prepare("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)");
-    $stmt->execute([$_SESSION['user_id'], $productId, $quantity]);
+// Проверка наличия
+if ($quantity > $product['stock']) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Недостаточно товара на складе. Доступно: ' . $product['stock']]);
+    exit;
 }
 
-// Считаем общее количество товаров в корзине
-$stmt = $pdo->prepare("SELECT COALESCE(SUM(quantity), 0) FROM cart WHERE user_id = ?");
-$stmt->execute([$_SESSION['user_id']]);
-$totalCount = (int) $stmt->fetchColumn();
+try {
+    if ($action === 'remove') {
+        // Удалить из корзины
+        $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ? AND product_id = ?");
+        $stmt->execute([$_SESSION['user_id'], $product_id]);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Товар удалён из корзины',
+            'cart_count' => cartCount()
+        ]);
+    } else {
+        // Добавить или обновить количество
+        $stmt = $pdo->prepare("
+            INSERT INTO cart (user_id, product_id, quantity)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)
+        ");
+        $stmt->execute([$_SESSION['user_id'], $product_id, $quantity]);
 
-echo json_encode(['ok' => true, 'cart_count' => $totalCount]);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Товар добавлен в корзину',
+            'cart_count' => cartCount(),
+            'product' => [
+                'id' => $product['id'],
+                'name' => $product['name'],
+                'price' => (float)$product['price'],
+                'quantity' => $quantity
+            ]
+        ]);
+    }
+} catch (PDOException $e) {
+    error_log('Cart error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Ошибка сервера']);
+}
