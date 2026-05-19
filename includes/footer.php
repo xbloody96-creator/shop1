@@ -1,29 +1,40 @@
-<!-- Футер сайта -->
+<!-- 
+    ============================================
+    ПОДВАЛ САЙТА (Footer)
+    Содержит информацию о магазине, ссылки
+    для покупателей и контактные данные
+    ============================================
+-->
 <footer class="site-footer">
     <div class="container">
         <div class="footer-grid">
+            <!-- Колонка 1: О магазине -->
             <div class="footer-col">
                 <h4>🏪 Магазин</h4>
                 <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.6">
                     Современный магазин электроники с быстрой доставкой и гарантией качества.
+                    Работаем для вас ежедневно!
                 </p>
+                <!-- Социальные сети -->
                 <div style="margin-top:16px;display:flex;gap:12px">
-                    <a href="#" style="color:var(--text-muted);font-size:1.2rem">📱</a>
-                    <a href="#" style="color:var(--text-muted);font-size:1.2rem">📷</a>
-                    <a href="#" style="color:var(--text-muted);font-size:1.2rem">✈️</a>
+                    <a href="#" style="color:var(--text-muted);font-size:1.2rem" title="ВКонтакте">📱</a>
+                    <a href="#" style="color:var(--text-muted);font-size:1.2rem" title="Instagram">📷</a>
+                    <a href="#" style="color:var(--text-muted);font-size:1.2rem" title="Telegram">✈️</a>
                 </div>
             </div>
             
+            <!-- Колонка 2: Покупателям -->
             <div class="footer-col">
                 <h4>Покупателям</h4>
                 <ul style="list-style:none;padding:0;margin:0">
-                    <li style="margin-bottom:8px"><a href="catalog.php" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem">Каталог</a></li>
-                    <li style="margin-bottom:8px"><a href="cart.php" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem">Корзина</a></li>
-                    <li style="margin-bottom:8px"><a href="favorites.php" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem">Избранное</a></li>
-                    <li style="margin-bottom:8px"><a href="#" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem">Доставка</a></li>
+                    <li style="margin-bottom:8px"><a href="catalog.php" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem">📦 Каталог товаров</a></li>
+                    <li style="margin-bottom:8px"><a href="cart.php" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem">🛒 Корзина</a></li>
+                    <li style="margin-bottom:8px"><a href="favorites.php" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem">❤️ Избранное</a></li>
+                    <li style="margin-bottom:8px"><a href="#" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem">🚚 Доставка и оплата</a></li>
                 </ul>
             </div>
             
+            <!-- Колонка 3: Контакты -->
             <div class="footer-col">
                 <h4>Контакты</h4>
                 <ul style="list-style:none;padding:0;margin:0">
@@ -34,28 +45,44 @@
             </div>
         </div>
         
+        <!-- Копирайт -->
         <div style="border-top:1px solid var(--border);margin-top:32px;padding-top:20px;text-align:center;color:var(--text-muted);font-size:0.8rem">
             © <?= date('Y') ?> Магазин электроники. Все права защищены.
         </div>
     </div>
 </footer>
 
+<!-- Модальное окно (overlay) -->
 <div id="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999"></div>
 
-<!-- ─── СКРИПТЫ ─── -->
+<!-- 
+    ============================================
+    СКРИПТЫ МАГАЗИНА
+    Обработка кнопок корзины и избранного
+    ============================================
+-->
 <script>
 (function() {
     'use strict';
     
     console.log('🔥 ShopJS initializing...');
     
-    // Определяем basePath из URL
+    // Определяем базовый путь из URL (для работы в подпапке /shop/)
     const path = window.location.pathname;
     const basePath = path.includes('/shop/') ? '/shop' : '';
     console.log('📁 Base path:', basePath || '(root)');
     
-    // Глобальные функции
+    /**
+     * Глобальный объект для работы с корзиной и избранным
+     * shopCart.add() — добавить товар в корзину
+     * shopCart.toggleFavorite() — переключить статус избранного
+     */
     window.shopCart = {
+        /**
+         * Добавить товар в корзину
+         * @param {number} productId - ID товара
+         * @param {HTMLElement} btn - Кнопка, на которую нажали
+         */
         add: function(productId, btn) {
             console.log('🛒 [SHOP_CART.ADD] Starting, product ID:', productId);
             console.log('🛒 [SHOP_CART.ADD] Button element:', btn);
@@ -66,8 +93,11 @@
                 return;
             }
             
+            // Сохраняем исходное состояние кнопки
             const originalText = btn.innerHTML;
             const originalBg = btn.style.background;
+            
+            // Показываем индикатор загрузки
             btn.innerHTML = '⏳ ...';
             btn.disabled = true;
             
@@ -103,6 +133,7 @@
                     btn.innerHTML = '✅ В корзине';
                     btn.style.background = 'var(--success)';
                     
+                    // Обновляем счётчик в шапке
                     const counter = document.querySelector('.cart-count');
                     if (counter && data.cart_count !== undefined) {
                         counter.textContent = data.cart_count;
@@ -110,6 +141,7 @@
                         setTimeout(() => counter.style.transform = 'scale(1)', 200);
                     }
                     
+                    // Возвращаем кнопку в исходное состояние через 1.5 сек
                     setTimeout(() => {
                         btn.innerHTML = originalText;
                         btn.style.background = originalBg;
@@ -135,6 +167,11 @@
             });
         },
         
+        /**
+         * Переключить статус "Избранное" для товара
+         * @param {number} productId - ID товара
+         * @param {HTMLElement} btn - Кнопка, на которую нажали
+         */
         toggleFavorite: function(productId, btn) {
             console.log('❤️ [SHOP_CART.FAV] Starting, product ID:', productId);
             
@@ -185,27 +222,31 @@
         }
     };
     
-    // Инициализация после загрузки DOM
+    /**
+     * Инициализация после полной загрузки DOM
+     * Навешиваем обработчики событий на кнопки корзины и избранного
+     */
     document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ [INIT] DOM Ready');
         
-        // Находим кнопки
+        // Находим все кнопки добавления в корзину и избранное
         const cartButtons = document.querySelectorAll('.js-add-cart');
         const favButtons = document.querySelectorAll('.js-add-fav');
         
         console.log('🛒 [INIT] Found cart buttons:', cartButtons.length);
         console.log('❤️ [INIT] Found fav buttons:', favButtons.length);
         
-        // Вешаем обработчики НАПРЯМУЮ
+        // Обрабатываем кнопки корзины
         cartButtons.forEach((btn, index) => {
             const productId = btn.dataset.productId;
             console.log(`  🛒 Button #${index}: ID=${productId}, classes="${btn.className}"`);
             console.log(`  🛒 Button #${index}: disabled=${btn.disabled}, type=${btn.type}`);
             
-            // Удаляем любые существующие обработчики (клонированием)
+            // Удаляем любые существующие обработчики (клонированием узла)
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
+            // Навешиваем новый обработчик
             newBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -218,6 +259,7 @@
             console.log(`  ✅ Button #${index} listener attached`);
         });
         
+        // Обрабатываем кнопки избранного
         favButtons.forEach((btn, index) => {
             const productId = btn.dataset.productId;
             console.log(`  ❤️ Fav Button #${index}: ID=${productId}, classes="${btn.className}"`);
@@ -237,7 +279,7 @@
         
         console.log('✅ [INIT] All buttons initialized!');
         
-        // Тест
+        // Тестовая проверка через 0.5 сек
         setTimeout(() => {
             const testBtn = document.querySelector('.js-add-cart');
             if (testBtn) {

@@ -1,32 +1,65 @@
+/**
+ * Файл: login.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
+/**
+ * Страница входа пользователя
+ * 
+ * @package Shop
+ */
+
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
-if (isLoggedIn()) { header('Location: /shop/profile.php'); exit; }
+
+// Если пользователь уже авторизован — перенаправляем в профиль
+if (isLoggedIn()) {
+    // Перенаправление пользователя
+header('Location: /shop/profile.php');
+    exit;
+}
 
 $errors = [];
 $email  = '';
 
+// Обработка формы входа
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (empty($email)) $errors[] = 'Введите email или логин';
-    if (empty($password)) $errors[] = 'Введите пароль';
+    // Валидация входных данных
+    if (empty($email)) {
+        $errors[] = 'Введите email или логин';
+    }
+    if (empty($password)) {
+        $errors[] = 'Введите пароль';
+    }
 
+    // Если ошибок нет, пытаемся авторизовать
     if (empty($errors)) {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? OR login = ? LIMIT 1");
+        $stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT * FROM users WHERE email = ? OR login = ? LIMIT 1");
         $stmt->execute([$email, $email]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
             loginUser($user);
-            // Сохраняем сессию в таблицу
+            
+            // Сохраняем информацию о сессии в БД для аудита
             $ip = $_SERVER['REMOTE_ADDR'] ?? '';
             $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
             $token = bin2hex(random_bytes(32));
-            $pdo->prepare("INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent) VALUES (?,?,?,?)")
-                ->execute([$user['id'], $token, $ip, $ua]);
+            
+            $stmt = // SQL Запрос: вставка данных
+    $pdo->prepare("INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent) VALUES (?,?,?,?)");
+            $stmt->execute([$user['id'], $token, $ip, $ua]);
 
-            header('Location: ' . ($_GET['redirect'] ?? '/shop/index.php'));
+            // Перенаправление на страницу, с которой пришёл пользователь, или на главную
+            $redirect = $_GET['redirect'] ?? '/shop/index.php';
+            // Перенаправление пользователя
+header('Location: ' . $redirect);
             exit;
         } else {
             $errors[] = 'Неверный email/логин или пароль';

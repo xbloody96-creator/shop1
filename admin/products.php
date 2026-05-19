@@ -1,17 +1,26 @@
+/**
+ * Файл: products.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 // Удаление
 if (isset($_GET['delete']) && (int)$_GET['delete']) {
-    $pid = (int)$_GET['delete'];
+    $productId = (int)$_GET['delete'];
     // Удаляем изображение
-    $img = $pdo->prepare("SELECT main_image FROM products WHERE id=?");
-    $img->execute([$pid]);
-    $row = $img->fetch();
-    if ($row['main_image'] && file_exists(__DIR__ . '/../uploads/' . $row['main_image'])) {
-        unlink(__DIR__ . '/../uploads/' . $row['main_image']);
+    // SQL Запрос: выборка данных
+    $imageFile = $pdo->prepare("SELECT main_image FROM products WHERE id=?");
+    $imageFile->execute([$productId]);
+    $record = $imageFile->fetch();
+    if ($record['main_image'] && file_exists(__DIR__ . '/../uploads/' . $record['main_image'])) {
+        unlink(__DIR__ . '/../uploads/' . $record['main_image']);
     }
-    $pdo->prepare("DELETE FROM products WHERE id=?")->execute([$pid]);
-    header('Location: /shop/admin/products.php?deleted=1'); exit;
+    // SQL Запрос: удаление данных
+    $pdo->prepare("DELETE FROM products WHERE id=?")->execute([$productId]);
+    // Перенаправление пользователя
+header('Location: /shop/admin/products.php?deleted=1'); exit;
 }
 
 $page = max(1,(int)($_GET['page']??1));
@@ -25,13 +34,17 @@ if ($search) {
     $params[':s'] = '%'.$search.'%';
 }
 
-$total = (int)$pdo->prepare("SELECT COUNT(*) FROM products p $where")->execute($params) ? $pdo->prepare("SELECT COUNT(*) FROM products p $where") : 0;
-$countStmt = $pdo->prepare("SELECT COUNT(*) FROM products p $where");
+$total = (int)// SQL Запрос: выборка данных
+    $pdo->prepare("SELECT COUNT(*) FROM products p $where")->execute($params) ? // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT COUNT(*) FROM products p $where") : 0;
+$countStmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT COUNT(*) FROM products p $where");
 $countStmt->execute($params);
 $total = (int)$countStmt->fetchColumn();
 $totalPages = (int)ceil($total/$per);
 
-$stmt = $pdo->prepare("SELECT p.*, c.name as cat FROM products p LEFT JOIN categories c ON p.category_id=c.id $where ORDER BY p.id DESC LIMIT :l OFFSET :o");
+$stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT p.*, c.name as cat FROM products p LEFT JOIN categories c ON p.category_id=c.id $where ORDER BY p.id DESC LIMIT :l OFFSET :o");
 foreach ($params as $k=>$v) $stmt->bindValue($k,$v);
 $stmt->bindValue(':l',$per,PDO::PARAM_INT);
 $stmt->bindValue(':o',$off,PDO::PARAM_INT);
@@ -108,8 +121,10 @@ $products = $stmt->fetchAll();
 <?php
 // Toggle active
 if (isset($_GET['toggle']) && isset($_GET['val'])) {
+    // SQL Запрос: обновление данных
     $pdo->prepare("UPDATE products SET is_active=? WHERE id=?")->execute([(int)$_GET['val'], (int)$_GET['toggle']]);
-    header('Location: /shop/admin/products.php'); exit;
+    // Перенаправление пользователя
+header('Location: /shop/admin/products.php'); exit;
 }
 ?>
 

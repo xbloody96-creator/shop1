@@ -1,8 +1,16 @@
+/**
+ * Файл: favorites.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 requireLogin();
 
-$stmt = $pdo->prepare("SELECT p.* FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? ORDER BY f.added_at DESC");
+$stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT p.* FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? ORDER BY f.added_at DESC");
 $stmt->execute([$_SESSION['user_id']]);
 $favorites = $stmt->fetchAll();
 

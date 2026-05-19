@@ -1,3 +1,9 @@
+/**
+ * Файл: categories.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -8,15 +14,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $catId = (int)($_POST['cat_id']??0);
 
     if ($_POST['action']==='delete') {
-        $pdo->prepare("DELETE FROM categories WHERE id=?")->execute([(int)$_POST['cat_id']]);
+        // SQL Запрос: удаление данных
+    $pdo->prepare("DELETE FROM categories WHERE id=?")->execute([(int)$_POST['cat_id']]);
     } elseif ($name) {
         if ($catId) {
-            $pdo->prepare("UPDATE categories SET name=?,slug=?,parent_id=?,sort_order=? WHERE id=?")->execute([$name,$slug,$parentId,$sortOrder,$catId]);
+            // SQL Запрос: обновление данных
+    $pdo->prepare("UPDATE categories SET name=?,slug=?,parent_id=?,sort_order=? WHERE id=?")->execute([$name,$slug,$parentId,$sortOrder,$catId]);
         } else {
-            $pdo->prepare("INSERT INTO categories (name,slug,parent_id,sort_order) VALUES (?,?,?,?)")->execute([$name,$slug,$parentId,$sortOrder]);
+            // SQL Запрос: вставка данных
+    $pdo->prepare("INSERT INTO categories (name,slug,parent_id,sort_order) VALUES (?,?,?,?)")->execute([$name,$slug,$parentId,$sortOrder]);
         }
     }
-    header('Location: /shop/admin/categories.php?saved=1'); exit;
+    // Перенаправление пользователя
+header('Location: /shop/admin/categories.php?saved=1'); exit;
 }
 
 $cats    = $pdo->query("SELECT c.*, p.name as parent_name, (SELECT COUNT(*) FROM products WHERE category_id=c.id) as cnt FROM categories c LEFT JOIN categories p ON c.parent_id=p.id ORDER BY c.sort_order,c.name")->fetchAll();

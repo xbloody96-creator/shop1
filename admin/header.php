@@ -1,3 +1,9 @@
+/**
+ * Файл: header.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 requireAdmin();

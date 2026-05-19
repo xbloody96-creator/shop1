@@ -1,3 +1,9 @@
+/**
+ * Файл: settings.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 $success = false;
@@ -5,7 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $keys = ['site_name','site_description','contact_phone','contact_email','contact_address','social_vk','social_tg','map_lat','map_lng'];
     foreach ($keys as $k) {
         $v = trim($_POST[$k] ?? '');
-        $pdo->prepare("UPDATE settings SET setting_value=? WHERE setting_key=?")->execute([$v, $k]);
+        // SQL Запрос: обновление данных
+    $pdo->prepare("UPDATE settings SET setting_value=? WHERE setting_key=?")->execute([$v, $k]);
     }
     $success = true;
 }

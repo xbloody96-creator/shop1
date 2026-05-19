@@ -1,8 +1,16 @@
+/**
+ * Файл: news.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 if (isset($_GET['delete'])) {
+    // SQL Запрос: удаление данных
     $pdo->prepare("DELETE FROM news WHERE id=?")->execute([(int)$_GET['delete']]);
-    header('Location: /shop/admin/news.php?deleted=1'); exit;
+    // Перенаправление пользователя
+header('Location: /shop/admin/news.php?deleted=1'); exit;
 }
 
 $newsList = $pdo->query("SELECT * FROM news ORDER BY created_at DESC")->fetchAll();

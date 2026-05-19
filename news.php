@@ -1,11 +1,19 @@
+/**
+ * Файл: news.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 
 $page = max(1,(int)($_GET['page']??1));
 $per  = 9; $off = ($page-1)*$per;
 
 $total = (int)$pdo->query("SELECT COUNT(*) FROM news WHERE is_active=1")->fetchColumn();
-$stmt  = $pdo->prepare("SELECT * FROM news WHERE is_active=1 ORDER BY created_at DESC LIMIT :l OFFSET :o");
+$stmt  = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT * FROM news WHERE is_active=1 ORDER BY created_at DESC LIMIT :l OFFSET :o");
 $stmt->bindValue(':l',$per,PDO::PARAM_INT);
 $stmt->bindValue(':o',$off,PDO::PARAM_INT);
 $stmt->execute();

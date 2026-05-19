@@ -1,108 +1,176 @@
 <?php
+/**
+ * Страница каталога товаров
+ * 
+ * Обрабатывает фильтрацию, сортировку и пагинацию товаров.
+ * Поддерживает фильтры по категории, цене, наличию и различные варианты сортировки.
+ */
+
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
 
-// Параметры фильтрации
-$categoryId = (int)($_GET['category'] ?? 0);
-$sortBy     = $_GET['sort'] ?? 'popular';
-$minPrice   = (float)($_GET['min_price'] ?? 0);
-$maxPrice   = (float)($_GET['max_price'] ?? 999999);
-$inStock    = isset($_GET['in_stock']);
-$page       = max(1, (int)($_GET['page'] ?? 1));
-$perPage    = 20;
-$offset     = ($page - 1) * $perPage;
+// ============================================================================
+// 1. Получение и обработка параметров запроса
+// ============================================================================
 
-// Построение запроса
-$where  = ['p.is_active = 1'];
-$params = [];
+// Категория товара (0 = все категории)
+$categoryId = isset($_GET['category']) ? (int)$_GET['category'] : 0;
 
+// Тип сортировки
+$sortBy = $_GET['sort'] ?? 'popular';
+
+// Фильтр по цене
+$minPrice = isset($_GET['min_price']) ? (float)$_GET['min_price'] : 0;
+$maxPrice = isset($_GET['max_price']) ? (float)$_GET['max_price'] : 999999;
+
+// Фильтр "только в наличии"
+$inStock = isset($_GET['in_stock']);
+
+// Пагинация: текущая страница (минимум 1)
+$page = max(1, isset($_GET['page']) ? (int)$_GET['page'] : 1);
+$perPage = 20; // Товаров на страницу
+$offset = ($page - 1) * $perPage;
+
+// ============================================================================
+// 2. Построение условий для SQL-запроса
+// ============================================================================
+
+$whereConditions = [];
+$sqlParams = [];
+
+// Условие: активные товары
+$whereConditions[] = 'p.is_active = 1';
+
+// Фильтр по категории
 if ($categoryId > 0) {
-    $where[]  = 'p.category_id = :cat';
-    $params[':cat'] = $categoryId;
+    $whereConditions[] = 'p.category_id = :cat';
+    $sqlParams[':cat'] = $categoryId;
 }
+
+// Фильтр по минимальной цене
 if ($minPrice > 0) {
-    $where[]  = 'p.price >= :min';
-    $params[':min'] = $minPrice;
+    $whereConditions[] = 'p.price >= :min';
+    $sqlParams[':min'] = $minPrice;
 }
+
+// Фильтр по максимальной цене
 if ($maxPrice < 999999) {
-    $where[]  = 'p.price <= :max';
-    $params[':max'] = $maxPrice;
+    $whereConditions[] = 'p.price <= :max';
+    $sqlParams[':max'] = $maxPrice;
 }
+
+// Фильтр по наличию
 if ($inStock) {
-    $where[]  = 'p.stock > 0';
+    $whereConditions[] = 'p.stock > 0';
 }
 
-$orderClause = match($sortBy) {
-    'price_asc'  => 'p.price ASC',
-    'price_desc' => 'p.price DESC',
-    'new'        => 'p.created_at DESC',
-    'name'       => 'p.name ASC',
-    default      => 'p.is_popular DESC, p.created_at DESC',
-};
+// Формирование строки WHERE
+$whereClause = implode(' AND ', $whereConditions);
 
-$whereStr = implode(' AND ', $where);
+// Определение порядка сортировки
+switch ($sortBy) {
+    case 'price_asc':
+        $orderClause = 'p.price ASC';
+        break;
+    case 'price_desc':
+        $orderClause = 'p.price DESC';
+        break;
+    case 'new':
+        $orderClause = 'p.created_at DESC';
+        break;
+    case 'name':
+        $orderClause = 'p.name ASC';
+        break;
+    case 'popular':
+    default:
+        // Сначала популярные, потом новые
+        $orderClause = 'p.is_popular DESC, p.created_at DESC';
+        break;
+}
 
-// Общее количество
-$countStmt = $pdo->prepare("SELECT COUNT(*) FROM products p WHERE $whereStr");
-$countStmt->execute($params);
+// ============================================================================
+// 3. Получение данных из базы
+// ============================================================================
+
+// Подсчет общего количества товаров
+$countSql = "SELECT COUNT(*) FROM products p WHERE $whereClause";
+$countStmt = $pdo->prepare($countSql);
+$countStmt->execute($sqlParams);
 $totalProducts = (int)$countStmt->fetchColumn();
-$totalPages    = (int)ceil($totalProducts / $perPage);
+$totalPages = ceil($totalProducts / $perPage);
 
-// Товары
-$stmt = $pdo->prepare("SELECT p.*, c.name as cat_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE $whereStr ORDER BY $orderClause LIMIT :limit OFFSET :offset");
-foreach ($params as $k => $v) $stmt->bindValue($k, $v);
+// Получение списка товаров с информацией о категории
+$productsSql = "
+    SELECT p.*, c.name as cat_name 
+    FROM products p 
+    LEFT JOIN categories c ON p.category_id = c.id 
+    WHERE $whereClause 
+    ORDER BY $orderClause 
+    LIMIT :limit OFFSET :offset
+";
+$stmt = $pdo->prepare($productsSql);
+
+// Привязка параметров
+foreach ($sqlParams as $paramName => $paramValue) {
+    $stmt->bindValue($paramName, $paramValue);
+}
 $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $products = $stmt->fetchAll();
 
-// Категории
-$categories = $pdo->query("SELECT * FROM categories WHERE parent_id IS NULL ORDER BY sort_order")->fetchAll();
+// Получение списка корневых категорий для фильтра
+$categoriesSql = "SELECT * FROM categories WHERE parent_id IS NULL ORDER BY sort_order";
+$categories = $pdo->query($categoriesSql)->fetchAll();
 
-// Текущая категория
-$currentCat = null;
+// Информация о текущей категории (если выбрана)
+$currentCategory = null;
 if ($categoryId > 0) {
-    $s = $pdo->prepare("SELECT * FROM categories WHERE id = ?");
-    $s->execute([$categoryId]);
-    $currentCat = $s->fetch();
+    $catStmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT * FROM categories WHERE id = ?");
+    $catStmt->execute([$categoryId]);
+    $currentCategory = $catStmt->fetch();
 }
 
-// Диапазон цен
-$priceRange = $pdo->query("SELECT MIN(price) as min, MAX(price) as max FROM products WHERE is_active=1")->fetch();
+// Диапазон цен для отображения в фильтре
+$priceRangeSql = "SELECT MIN(price) as min, MAX(price) as max FROM products WHERE is_active = 1";
+$priceRange = $pdo->query($priceRangeSql)->fetch();
 
+// Подключение шаблона заголовка
 require_once __DIR__ . '/includes/header.php';
 ?>
 
 <div class="container">
-  <!-- Breadcrumbs -->
+  <!-- Хлебные крошки (навигационная цепочка) -->
   <div class="breadcrumbs">
     <a href="/shop/index.php">Главная</a> /
     <a href="/shop/catalog.php">Каталог</a>
-    <?php if ($currentCat): ?>
-    / <span><?= htmlspecialchars($currentCat['name']) ?></span>
+    <?php if ($currentCategory): ?>
+    / <span><?= htmlspecialchars($currentCategory['name']) ?></span>
     <?php endif; ?>
   </div>
 
   <div class="catalog-layout">
-    <!-- Сайдбар с фильтрами -->
+    <!-- Боковая панель с фильтрами -->
     <aside class="catalog-sidebar">
       <h3 class="sidebar-title">Фильтры</h3>
       <form id="catalog-filter-form" method="GET" action="">
 
-        <!-- Категории -->
+        <!-- Фильтр по категориям -->
         <div class="filter-group">
           <div class="sidebar-title" style="font-size:0.88rem;margin-bottom:10px">Категория</div>
           <label>
-            <input type="radio" name="category" value="0" <?= $categoryId===0 ? 'checked' : '' ?>> Все категории
+            <input type="radio" name="category" value="0" <?= $categoryId === 0 ? 'checked' : '' ?>> Все категории
           </label>
           <?php foreach ($categories as $cat): ?>
           <label>
-            <input type="radio" name="category" value="<?= $cat['id'] ?>" <?= $categoryId===$cat['id'] ? 'checked' : '' ?>>
+            <input type="radio" name="category" value="<?= $cat['id'] ?>" <?= $categoryId === $cat['id'] ? 'checked' : '' ?>>
             <?= htmlspecialchars($cat['name']) ?>
           </label>
           <?php endforeach; ?>
         </div>
 
-        <!-- Цена -->
+        <!-- Фильтр по цене -->
         <div class="filter-group">
           <div class="sidebar-title" style="font-size:0.88rem;margin-bottom:10px">Цена, ₽</div>
           <div class="price-range">
@@ -114,7 +182,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
         </div>
 
-        <!-- Наличие -->
+        <!-- Фильтр по наличию -->
         <div class="filter-group">
           <label>
             <input type="checkbox" name="in_stock" <?= $inStock ? 'checked' : '' ?>>
@@ -122,15 +190,15 @@ require_once __DIR__ . '/includes/header.php';
           </label>
         </div>
 
-        <!-- Сортировка -->
+        <!-- Сортировка товаров -->
         <div class="filter-group">
           <div class="sidebar-title" style="font-size:0.88rem;margin-bottom:10px">Сортировка</div>
           <select name="sort" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text)">
-            <option value="popular"    <?= $sortBy==='popular'    ? 'selected' : '' ?>>По популярности</option>
-            <option value="new"        <?= $sortBy==='new'        ? 'selected' : '' ?>>Сначала новые</option>
-            <option value="price_asc"  <?= $sortBy==='price_asc'  ? 'selected' : '' ?>>Цена: по возрастанию</option>
-            <option value="price_desc" <?= $sortBy==='price_desc' ? 'selected' : '' ?>>Цена: по убыванию</option>
-            <option value="name"       <?= $sortBy==='name'       ? 'selected' : '' ?>>По названию</option>
+            <option value="popular"    <?= $sortBy === 'popular' ? 'selected' : '' ?>>По популярности</option>
+            <option value="new"        <?= $sortBy === 'new' ? 'selected' : '' ?>>Сначала новые</option>
+            <option value="price_asc"  <?= $sortBy === 'price_asc' ? 'selected' : '' ?>>Цена: по возрастанию</option>
+            <option value="price_desc" <?= $sortBy === 'price_desc' ? 'selected' : '' ?>>Цена: по убыванию</option>
+            <option value="name"       <?= $sortBy === 'name' ? 'selected' : '' ?>>По названию</option>
           </select>
         </div>
 
@@ -139,41 +207,48 @@ require_once __DIR__ . '/includes/header.php';
       </form>
     </aside>
 
-    <!-- Товары -->
+    <!-- Список товаров -->
     <div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h1 style="font-size:1.3rem;font-weight:800">
-          <?= $currentCat ? htmlspecialchars($currentCat['name']) : 'Все товары' ?>
+          <?= $currentCategory ? htmlspecialchars($currentCategory['name']) : 'Все товары' ?>
           <span style="font-size:0.85rem;color:var(--text-muted);font-weight:400">(<?= $totalProducts ?>)</span>
         </h1>
       </div>
 
       <?php if (empty($products)): ?>
+      <!-- Сообщение, если товары не найдены -->
       <div class="empty-state">
         <div class="empty-icon">🔍</div>
         <h3>Товары не найдены</h3>
         <p>Попробуйте изменить параметры фильтрации</p>
       </div>
       <?php else: ?>
+      <!-- Сетка товаров -->
       <div class="products-grid">
         <?php foreach ($products as $product): ?>
         <?php include __DIR__ . '/includes/product_card.php'; ?>
         <?php endforeach; ?>
       </div>
 
-      <!-- Пагинация -->
+      <!-- Постраничная навигация -->
       <?php if ($totalPages > 1): ?>
       <div class="pagination">
+        <!-- Кнопка "Назад" -->
         <?php if ($page > 1): ?>
         <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>">‹</a>
         <?php endif; ?>
-        <?php for ($i = max(1,$page-2); $i <= min($totalPages,$page+2); $i++): ?>
+        
+        <!-- Номера страниц -->
+        <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
         <?php if ($i === $page): ?>
         <span class="current"><?= $i ?></span>
         <?php else: ?>
         <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"><?= $i ?></a>
         <?php endif; ?>
         <?php endfor; ?>
+        
+        <!-- Кнопка "Вперед" -->
         <?php if ($page < $totalPages): ?>
         <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>">›</a>
         <?php endif; ?>

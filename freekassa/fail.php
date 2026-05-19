@@ -1,3 +1,9 @@
+/**
+ * Файл: fail.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
 /**
  * FreeKassa — Fail URL
@@ -11,7 +17,8 @@ $orderId = (int)($_GET['MERCHANT_ORDER_ID'] ?? 0);
 // Загружаем заказ
 $order = null;
 if ($orderId) {
-    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
+    $stmt = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT * FROM orders WHERE id = ?");
     $stmt->execute([$orderId]);
     $order = $stmt->fetch();
 }

@@ -1,12 +1,20 @@
+/**
+ * Файл: news_edit.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 $id   = (int)($_GET['id']??0);
 $news = null;
 if ($id) {
-    $s = $pdo->prepare("SELECT * FROM news WHERE id=?");
+    $s = // SQL Запрос: выборка данных
+    $pdo->prepare("SELECT * FROM news WHERE id=?");
     $s->execute([$id]);
     $news = $s->fetch();
-    if (!$news) { header('Location: /shop/admin/news.php'); exit; }
+    if (!$news) { // Перенаправление пользователя
+header('Location: /shop/admin/news.php'); exit; }
 }
 
 $errors = [];
@@ -32,11 +40,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         if ($id) {
-            $pdo->prepare("UPDATE news SET title=?,slug=?,content=?,image=?,is_active=? WHERE id=?")->execute([$title,$slug,$content,$image,$isActive,$id]);
+            // SQL Запрос: обновление данных
+    $pdo->prepare("UPDATE news SET title=?,slug=?,content=?,image=?,is_active=? WHERE id=?")->execute([$title,$slug,$content,$image,$isActive,$id]);
         } else {
-            $pdo->prepare("INSERT INTO news (title,slug,content,image,is_active) VALUES (?,?,?,?,?)")->execute([$title,$slug,$content,$image,$isActive]);
+            // SQL Запрос: вставка данных
+    $pdo->prepare("INSERT INTO news (title,slug,content,image,is_active) VALUES (?,?,?,?,?)")->execute([$title,$slug,$content,$image,$isActive]);
         }
-        header('Location: /shop/admin/news.php?saved=1'); exit;
+        // Перенаправление пользователя
+header('Location: /shop/admin/news.php?saved=1'); exit;
     }
 }
 ?>

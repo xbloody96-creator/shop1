@@ -1,14 +1,21 @@
+/**
+ * Файл: promotions.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'delete') {
-        $pdo->prepare("DELETE FROM promotions WHERE id=?")->execute([(int)$_POST['id']]);
+        // SQL Запрос: удаление данных
+    $pdo->prepare("DELETE FROM promotions WHERE id=?")->execute([(int)$_POST['id']]);
     } elseif ($_POST['action'] === 'save') {
         $title   = trim($_POST['title']??'');
         $desc    = trim($_POST['description']??'');
-        $disc    = (int)($_POST['discount_pct']??0);
+        $discount    = (int)($_POST['discount_pct']??0);
         $active  = isset($_POST['is_active']) ? 1 : 0;
-        $pid     = (int)($_POST['promo_id']??0);
+        $productId     = (int)($_POST['promo_id']??0);
 
         $image = null;
         if (!empty($_FILES['image']['name'])) {
@@ -22,15 +29,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
 
-        if ($pid) {
+        if ($productId) {
             $q = $image ? "UPDATE promotions SET title=?,description=?,discount_pct=?,is_active=?,image=? WHERE id=?" : "UPDATE promotions SET title=?,description=?,discount_pct=?,is_active=? WHERE id=?";
-            $params = $image ? [$title,$desc,$disc,$active,$image,$pid] : [$title,$desc,$disc,$active,$pid];
+            $params = $image ? [$title,$desc,$discount,$active,$image,$productId] : [$title,$desc,$discount,$active,$productId];
             $pdo->prepare($q)->execute($params);
         } else {
-            $pdo->prepare("INSERT INTO promotions (title,description,discount_pct,is_active,image) VALUES (?,?,?,?,?)")->execute([$title,$desc,$disc,$active,$image]);
+            // SQL Запрос: вставка данных
+    $pdo->prepare("INSERT INTO promotions (title,description,discount_pct,is_active,image) VALUES (?,?,?,?,?)")->execute([$title,$desc,$discount,$active,$image]);
         }
     }
-    header('Location: /shop/admin/promotions.php?saved=1'); exit;
+    // Перенаправление пользователя
+header('Location: /shop/admin/promotions.php?saved=1'); exit;
 }
 
 $promos = $pdo->query("SELECT * FROM promotions ORDER BY id DESC")->fetchAll();

@@ -1,3 +1,9 @@
+/**
+ * Файл: index.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php require_once __DIR__ . '/header.php'; ?>
 
 <h1>📊 Статистика магазина</h1>

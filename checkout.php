@@ -1,66 +1,157 @@
+/**
+ * Файл: checkout.php
+ * Описание: Страница сайта
+ * @version 1.0
+ */
+
 <?php
+/**
+ * Страница оформления заказа (Checkout)
+ * 
+ * Позволяет пользователю ввести данные доставки и оплаты,
+ * создаёт новый заказ в базе данных.
+ */
+
+// Подключение модуля аутентификации
 require_once __DIR__ . '/includes/auth.php';
-requireLogin();
+requireLogin(); // Требуется авторизация
 
 $userId = $_SESSION['user_id'];
-$user   = getCurrentUser();
+$user = getCurrentUser(); // Получаем данные текущего пользователя
 
-// Проверка что корзина не пуста
-$stmt = $pdo->prepare("SELECT c.*, p.name, p.price, p.main_image FROM cart c JOIN products p ON c.product_id = p.id WHERE c.user_id = ?");
+/**
+ * Получаем товары из корзины пользователя
+ * Если корзина пуста - перенаправляем на страницу корзины
+ */
+$sql = "SELECT c.*, p.name, p.price, p.main_image 
+        FROM cart c 
+        JOIN products p ON c.product_id = p.id 
+        WHERE c.user_id = ?";
+        
+$stmt = $pdo->prepare($sql);
 $stmt->execute([$userId]);
 $cartItems = $stmt->fetchAll();
 
+// Проверяем, есть ли товары в корзине
 if (empty($cartItems)) {
-    header('Location: /shop/cart.php');
+    // Перенаправление пользователя
+header('Location: /shop/cart.php');
     exit;
 }
 
-$total = array_sum(array_map(fn($i) => $i['price'] * $i['quantity'], $cartItems));
+// Считаем общую сумму заказа
+$orderTotal = array_sum(array_map(function($item) {
+    return $item['price'] * $item['quantity'];
+}, $cartItems));
 
-$errors  = [];
+// Переменные для обработки формы
+$errors = [];
 $success = false;
 $orderId = null;
 
+/**
+ * Обработка отправки формы оформления заказа
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $fullName      = trim($_POST['full_name'] ?? '');
-    $email         = trim($_POST['email'] ?? '');
-    $phone         = trim($_POST['phone'] ?? '');
-    $address       = trim($_POST['address'] ?? '');
+    // Получаем и очищаем данные из формы
+    $fullName = trim($_POST['full_name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $address = trim($_POST['address'] ?? '');
     $paymentMethod = $_POST['payment_method'] ?? 'card';
 
-    if (empty($fullName)) $errors[] = 'Введите ФИО';
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Некорректный email';
-    if (empty($address)) $errors[] = 'Введите адрес доставки';
+    // Валидация данных
+    if (empty($fullName)) {
+        $errors[] = 'Введите ФИО получателя';
+    }
+    
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Введите корректный email адрес';
+    }
+    
+    if (empty($address)) {
+        $errors[] = 'Укажите адрес доставки';
+    }
 
+    // Если ошибок нет - создаём заказ
     if (empty($errors)) {
-        // Создаём заказ
-        $pdo->prepare("INSERT INTO orders (user_id, full_name, email, phone, address, payment_method, total) VALUES (?,?,?,?,?,?,?)")
-            ->execute([$userId, $fullName, $email, $phone, $address, $paymentMethod, $total]);
-        $orderId = $pdo->lastInsertId();
+        try {
+            // Начинаем транзакцию для надёжности
+            $pdo->beginTransaction();
+            
+            // Создаём запись заказа в БД
+            $insertOrder = $pdo->prepare("
+                INSERT INTO orders (user_id, full_name, email, phone, address, payment_method, total) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            $insertOrder->execute([
+                $userId, 
+                $fullName, 
+                $email, 
+                $phone, 
+                $address, 
+                $paymentMethod, 
+                $orderTotal
+            ]);
+            
+            $orderId = $pdo->lastInsertId();
 
-        // Добавляем позиции заказа
-        foreach ($cartItems as $item) {
-            $pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?,?,?,?)")
-                ->execute([$orderId, $item['product_id'], $item['quantity'], $item['price']]);
+            // Добавляем товары в заказ (позиции заказа)
+            $insertItem = $pdo->prepare("
+                INSERT INTO order_items (order_id, product_id, quantity, price) 
+                VALUES (?, ?, ?, ?)
+            ");
+            
+            foreach ($cartItems as $item) {
+                $insertItem->execute([
+                    $orderId, 
+                    $item['product_id'], 
+                    $item['quantity'], 
+                    $item['price']
+                ]);
+            }
+
+            // Очищаем корзину пользователя после успешного создания заказа
+            $clearCart = // SQL Запрос: удаление данных
+    $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+            $clearCart->execute([$userId]);
+            
+            // Фиксируем транзакцию
+            $pdo->commit();
+
+            // Формируем и отправляем письмо с подтверждением заказа
+            $emailSubject = "Заказ #$orderId подтверждён — Магазин";
+            $emailMessage = "Здравствуйте, $fullName!\n\n";
+            $emailMessage .= "Ваш заказ #$orderId успешно оформлен.\n\n";
+            $emailMessage .= "Состав заказа:\n";
+            
+            foreach ($cartItems as $item) {
+                $itemSum = $item['price'] * $item['quantity'];
+                $emailMessage .= "- {$item['name']} × {$item['quantity']} = " 
+                               . number_format($itemSum, 0, '', ' ') . " ₽\n";
+            }
+            
+            $emailMessage .= "\nИтого: " . number_format($orderTotal, 0, '', ' ') . " ₽\n";
+            $emailMessage .= "Адрес доставки: $address\n\n";
+            $emailMessage .= "Спасибо за покупку!\nМагазин";
+            
+            // Отправка письма (используем стандартную функцию mail)
+            @mail(
+                $email, 
+                $emailSubject, 
+                $emailMessage, 
+                "From: noreply@magazin.ru\r\nContent-Type: text/plain; charset=UTF-8"
+            );
+
+            $success = true;
+            
+        } catch (Exception $e) {
+            // При ошибке откатываем транзакцию
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            $errors[] = 'Произошла ошибка при создании заказа. Попробуйте позже.';
         }
-
-        // Очищаем корзину
-        $pdo->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$userId]);
-
-        // Отправляем email (phpmailer или mail())
-        $subject = "Заказ #$orderId подтверждён — Магазин";
-        $msg = "Здравствуйте, $fullName!\n\n";
-        $msg .= "Ваш заказ #$orderId успешно оформлен.\n\n";
-        $msg .= "Состав заказа:\n";
-        foreach ($cartItems as $item) {
-            $msg .= "- {$item['name']} × {$item['quantity']} = " . number_format($item['price'] * $item['quantity'], 0, '', ' ') . " ₽\n";
-        }
-        $msg .= "\nИтого: " . number_format($total, 0, '', ' ') . " ₽\n";
-        $msg .= "Адрес доставки: $address\n\n";
-        $msg .= "Спасибо за покупку!\nМагазин";
-        @mail($email, $subject, $msg, "From: noreply@magazin.ru\r\nContent-Type: text/plain; charset=UTF-8");
-
-        $success = true;
     }
 }
 
@@ -75,20 +166,24 @@ require_once __DIR__ . '/includes/header.php';
 
   <?php if ($success): ?>
   <?php
-  // ── FreeKassa настройки ──────────────────────
+  // ── Настройки платёжной системы FreeKassa ──────────────────────
+  // Замените эти значения на ваши реальные данные из кабинета продавца
   define('FK_MERCHANT_ID', 'ВАШЕ_ID_МАГАЗИНА');
   define('FK_SECRET1',     'ВАШ_СЕКРЕТНЫЙ_КЛЮЧ_1');
-  define('FK_CURRENCY',    'RUB'); // RUB, USD, EUR и др.
+  define('FK_CURRENCY',    'RUB'); // Доступные валюты: RUB, USD, EUR и др.
 
   // Формируем подпись для формы оплаты
-  // Формат: MD5(MERCHANT_ID:AMOUNT:SECRET1:CURRENCY:MERCHANT_ORDER_ID)
-  $fkAmount = number_format($total, 2, '.', '');
+  // Алгоритм: MD5(MERCHANT_ID:AMOUNT:SECRET1:CURRENCY:MERCHANT_ORDER_ID)
+  $fkAmount = number_format($orderTotal, 2, '.', '');
   $fkSign   = md5(FK_MERCHANT_ID . ':' . $fkAmount . ':' . FK_SECRET1 . ':' . FK_CURRENCY . ':' . $orderId);
   ?>
 
+  <!-- Карточка успешного оформления заказа -->
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:48px 40px;text-align:center;max-width:580px;margin:0 auto;position:relative;overflow:hidden">
+    <!-- Декоративный элемент фона -->
     <div style="position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(0,214,143,0.12),transparent 70%);pointer-events:none"></div>
 
+    <!-- Иконка успеха -->
     <div style="width:76px;height:76px;border-radius:50%;background:rgba(0,214,143,0.1);border:2px solid rgba(0,214,143,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:2rem">✅</div>
 
     <h2 style="font-family:var(--font-d);font-size:1.3rem;font-weight:900;margin-bottom:10px">Заказ #<?= $orderId ?> оформлен!</h2>
@@ -97,13 +192,13 @@ require_once __DIR__ . '/includes/header.php';
       После оплаты мы начнём его обработку.
     </p>
 
-    <!-- Сумма к оплате -->
+    <!-- Блок с суммой к оплате -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 20px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:0.85rem;color:var(--text3)">Сумма к оплате</span>
-      <span style="font-family:var(--font-d);font-size:1.3rem;font-weight:900;color:var(--accent)"><?= number_format($total, 0, '', ' ') ?> ₽</span>
+      <span style="font-family:var(--font-d);font-size:1.3rem;font-weight:900;color:var(--accent)"><?= number_format($orderTotal, 0, '', ' ') ?> ₽</span>
     </div>
 
-    <!-- Форма FreeKassa -->
+    <!-- Форма оплаты через FreeKassa -->
     <form action="https://pay.fk.ru/" method="POST">
       <input type="hidden" name="m"   value="<?= FK_MERCHANT_ID ?>">
       <input type="hidden" name="oa"  value="<?= $fkAmount ?>">
@@ -122,6 +217,7 @@ require_once __DIR__ . '/includes/header.php';
       Вы будете перенаправлены на защищённую страницу оплаты
     </p>
 
+    <!-- Кнопки навигации -->
     <div style="display:flex;gap:10px;margin-top:20px">
       <a href="/shop/index.php" class="btn-secondary" style="flex:1;font-size:0.82rem">На главную</a>
       <a href="/shop/profile.php#orders" class="btn-secondary" style="flex:1;font-size:0.82rem">Мои заказы</a>
@@ -129,13 +225,18 @@ require_once __DIR__ . '/includes/header.php';
   </div>
   <?php else: ?>
 
+  <!-- Вывод ошибок валидации формы -->
   <?php foreach ($errors as $e): ?>
   <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
   <?php endforeach; ?>
 
+  <!-- Основная разметка страницы: форма слева, итог справа -->
   <div style="display:grid;grid-template-columns:1fr 380px;gap:24px">
+    
+    <!-- Левая колонка: форма оформления заказа -->
     <form method="POST" action="">
-      <!-- Данные покупателя -->
+      
+      <!-- Блок: Данные покупателя -->
       <div class="admin-form-card" style="margin-bottom:16px">
         <h3 style="font-weight:800;margin-bottom:16px">👤 Данные покупателя</h3>
         <div class="form-row">
@@ -156,7 +257,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
       </div>
 
-      <!-- Доставка -->
+      <!-- Блок: Адрес доставки -->
       <div class="admin-form-card" style="margin-bottom:16px">
         <h3 style="font-weight:800;margin-bottom:16px">🚚 Адрес доставки</h3>
         <div class="form-group">
@@ -166,46 +267,60 @@ require_once __DIR__ . '/includes/header.php';
         </div>
       </div>
 
-      <!-- Способ оплаты -->
+      <!-- Блок: Способ оплаты -->
       <div class="admin-form-card">
         <h3 style="font-weight:800;margin-bottom:16px">💳 Способ оплаты</h3>
         <div style="display:flex;flex-direction:column;gap:12px">
-          <label style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer">
+          
+          <label style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color 0.2s">
             <input type="radio" name="payment_method" value="card" checked>
             <span>💳 Банковская карта</span>
           </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer">
+          
+          <label style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color 0.2s">
             <input type="radio" name="payment_method" value="online">
             <span>📱 Онлайн-оплата</span>
           </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer">
+          
+          <label style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color 0.2s">
             <input type="radio" name="payment_method" value="cash">
             <span>💵 Наличными при получении</span>
           </label>
+          
         </div>
       </div>
 
-      <button type="submit" class="btn-primary" style="margin-top:20px">✅ Подтвердить заказ</button>
+      <!-- Кнопка отправки формы -->
+      <button type="submit" class="btn-primary" style="margin-top:20px;width:100%">
+        ✅ Подтвердить заказ
+      </button>
     </form>
 
-    <!-- Итог -->
-    <div class="cart-summary" style="position:sticky;top:120px;height:fit-content">
+    <!-- Правая колонка: итоговая информация о заказе -->
+    <aside class="cart-summary" style="position:sticky;top:120px;height:fit-content">
       <h3>Ваш заказ</h3>
+      
+      <!-- Список товаров -->
       <?php foreach ($cartItems as $item): ?>
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.88rem">
-        <span><?= htmlspecialchars(mb_substr($item['name'],0,30)) ?> ×<?= $item['quantity'] ?></span>
+        <span><?= htmlspecialchars(mb_substr($item['name'], 0, 30)) ?> ×<?= $item['quantity'] ?></span>
         <span><?= number_format($item['price'] * $item['quantity'], 0, '', ' ') ?> ₽</span>
       </div>
       <?php endforeach; ?>
+      
+      <!-- Доставка -->
       <div class="summary-row" style="margin-top:8px">
         <span>Доставка</span>
         <span style="color:var(--success)">Бесплатно</span>
       </div>
+      
+      <!-- Итоговая сумма -->
       <div class="summary-row total">
         <span>Итого</span>
-        <span><?= number_format($total, 0, '', ' ') ?> ₽</span>
+        <span><?= number_format($orderTotal, 0, '', ' ') ?> ₽</span>
       </div>
-    </div>
+    </aside>
+    
   </div>
   <?php endif; ?>
 </div>
