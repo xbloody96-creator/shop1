@@ -31,9 +31,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Некорректный email';
     if (empty($address)) $errors[] = 'Введите адрес доставки';
     
+    // Валидация телефона: только цифры, от 10 до 11 символов
+    $cleanPhone = preg_replace('/\D/', '', $phone);
+    if (empty($cleanPhone)) {
+        $errors[] = 'Введите номер телефона';
+    } elseif (strlen($cleanPhone) < 10 || strlen($cleanPhone) > 11) {
+        $errors[] = 'Номер телефона должен содержать от 10 до 11 цифр';
+    }
+    
     if (empty($errors)) {
         $pdo->prepare("INSERT INTO orders (user_id, full_name, email, phone, address, payment_method, total, status) VALUES (?,?,?,?,?,?,?,?)")
-            ->execute([$userId, $fullName, $email, $phone, $address, 'online', $total, 'pending']);
+            ->execute([$userId, $fullName, $email, $cleanPhone, $address, 'online', $total, 'pending']);
         $orderId = $pdo->lastInsertId();
         
         foreach ($cartItems as $item) {
@@ -48,11 +56,202 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 require_once __DIR__ . '/includes/header.php';
 ?>
-<div class="container">
+<style>
+.checkout-page {
+    padding: 32px 0;
+}
+.checkout-title {
+    font-family: var(--font-d);
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 28px;
+}
+.checkout-form-section {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+.checkout-form-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.checkout-section-title {
+    font-family: var(--font-d);
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+}
+.checkout-input-group {
+    margin-bottom: 16px;
+}
+.checkout-input-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+}
+.checkout-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg2);
+    border: 2px solid var(--border2);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all var(--tr);
+}
+.checkout-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+    background: var(--surface);
+}
+.checkout-input.error {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+}
+.checkout-input::placeholder {
+    color: var(--text3);
+}
+.checkout-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+.checkout-summary {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    position: sticky;
+    top: 100px;
+    height: fit-content;
+}
+.checkout-summary-title {
+    font-family: var(--font-d);
+    font-size: 1.2rem;
+    font-weight: 900;
+    margin-bottom: 20px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.checkout-summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+}
+.checkout-summary-item:last-child {
+    border-bottom: none;
+}
+.checkout-summary-name {
+    color: var(--text2);
+    max-width: 60%;
+}
+.checkout-summary-qty {
+    color: var(--text3);
+    font-size: 0.85rem;
+}
+.checkout-summary-price {
+    font-weight: 700;
+    color: var(--text);
+}
+.checkout-summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    font-size: 0.9rem;
+    color: var(--text2);
+}
+.checkout-summary-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 0;
+    margin-top: 12px;
+    border-top: 2px solid var(--border2);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+}
+.checkout-total-amount {
+    font-family: var(--font-d);
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--accent);
+}
+.checkout-submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-d);
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all var(--tr);
+    margin-top: 20px;
+    box-shadow: var(--glow-red);
+}
+.checkout-submit-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(255,45,59,0.5);
+}
+.checkout-submit-btn:active {
+    transform: translateY(-1px);
+}
+.form-row-checkout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+@media (max-width: 900px) {
+    .checkout-grid {
+        grid-template-columns: 1fr;
+    }
+    .checkout-summary {
+        position: static;
+        margin-top: 20px;
+    }
+    .form-row-checkout {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+<div class="container checkout-page">
     <div class="breadcrumbs">
         <a href="/index.php">Главная</a> / <a href="/cart.php">Корзина</a> / <span>Оформление заказа</span>
     </div>
-    <h1 style="font-size:1.6rem;font-weight:800;margin:12px 0 24px">📦 Оформление заказа</h1>
+    <h1 class="checkout-title">📦 Оформление заказа</h1>
 
     <?php if ($success && $orderId): ?>
     <?php
@@ -191,58 +390,140 @@ require_once __DIR__ . '/includes/header.php';
         <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
     <?php endforeach; ?>
 
-    <div style="display:grid;grid-template-columns:1fr 380px;gap:24px">
+    <div class="checkout-grid">
         <form method="POST" action="">
-            <div class="admin-form-card" style="margin-bottom:16px">
-                <h3 style="font-weight:800;margin-bottom:16px">👤 Данные покупателя</h3>
-                <div class="form-row">
-                    <div class="form-group">
+            <div class="checkout-form-section">
+                <h3 class="checkout-section-title">👤 Данные покупателя</h3>
+                <div class="form-row-checkout">
+                    <div class="checkout-input-group">
                         <label>ФИО <span class="required">*</span></label>
-                        <input type="text" name="full_name" class="form-control"
+                        <input type="text" name="full_name" class="checkout-input"
                                value="<?= htmlspecialchars($user['full_name'] ?? '') ?>" required>
                     </div>
-                    <div class="form-group">
+                    <div class="checkout-input-group">
                         <label>Email <span class="required">*</span></label>
-                        <input type="email" name="email" class="form-control"
+                        <input type="email" name="email" class="checkout-input"
                                value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Телефон</label>
-                    <input type="tel" name="phone" class="form-control" placeholder="+7 (___) ___-__-__">
+                <div class="checkout-input-group">
+                    <label>Телефон <span class="required">*</span></label>
+                    <input type="tel" name="phone" id="phone-input" class="checkout-input" 
+                           placeholder="+7 (___) ___-__-__" maxlength="16" required>
                 </div>
             </div>
 
-            <div class="admin-form-card" style="margin-bottom:16px">
-                <h3 style="font-weight:800;margin-bottom:16px">🚚 Адрес доставки</h3>
-                <div class="form-group">
+            <div class="checkout-form-section">
+                <h3 class="checkout-section-title">🚚 Адрес доставки</h3>
+                <div class="checkout-input-group">
                     <label>Адрес <span class="required">*</span></label>
-                    <textarea name="address" class="form-control" rows="3"
+                    <textarea name="address" class="checkout-input checkout-textarea"
                               placeholder="Город, улица, дом, квартира" required></textarea>
                 </div>
             </div>
 
-            <button type="submit" class="btn-primary" style="margin-top:20px">✅ Подтвердить заказ</button>
+            <button type="submit" class="checkout-submit-btn">✅ Подтвердить заказ</button>
         </form>
 
-        <div class="cart-summary" style="position:sticky;top:120px;height:fit-content">
-            <h3>Ваш заказ</h3>
+        <div class="checkout-summary">
+            <h3 class="checkout-summary-title">🛒 Ваш заказ</h3>
             <?php foreach ($cartItems as $item): ?>
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.88rem">
-                    <span><?= htmlspecialchars(mb_substr($item['name'],0,30)) ?> ×<?= $item['quantity'] ?></span>
-                    <span><?= number_format($item['price'] * $item['quantity'], 0, '', ' ') ?> ₽</span>
+                <div class="checkout-summary-item">
+                    <div>
+                        <div class="checkout-summary-name"><?= htmlspecialchars(mb_substr($item['name'],0,40)) ?></div>
+                        <div class="checkout-summary-qty">×<?= $item['quantity'] ?> шт.</div>
+                    </div>
+                    <div class="checkout-summary-price"><?= number_format($item['price'] * $item['quantity'], 0, '', ' ') ?> ₽</div>
                 </div>
             <?php endforeach; ?>
-            <div class="summary-row" style="margin-top:8px">
+            <div class="checkout-summary-row">
                 <span>Доставка</span>
-                <span style="color:var(--success)">Бесплатно</span>
+                <span style="color:var(--success);font-weight:600">Бесплатно</span>
             </div>
-            <div class="summary-row total">
+            <div class="checkout-summary-total">
                 <span>Итого</span>
-                <span><?= number_format($total, 0, '', ' ') ?> ₽</span>
+                <span class="checkout-total-amount"><?= number_format($total, 0, '', ' ') ?> ₽</span>
             </div>
         </div>
     </div>
+
+    <script>
+    // Маска для телефона и запрет букв
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneInput = document.getElementById('phone-input');
+        
+        phoneInput.addEventListener('input', function(e) {
+            // Удаляем все нецифровые символы
+            let value = e.target.value.replace(/\D/g, '');
+            
+            // Ограничиваем до 11 символов
+            if (value.length > 11) {
+                value = value.substring(0, 11);
+            }
+            
+            // Форматируем номер
+            let formattedValue = '';
+            if (value.length > 0) {
+                formattedValue = '+' + value;
+                if (value.length > 1) {
+                    formattedValue = '+7 (' + value.substring(1, 4);
+                    if (value.length > 4) {
+                        formattedValue += ') ' + value.substring(4, 7);
+                        if (value.length > 7) {
+                            formattedValue += '-' + value.substring(7, 9);
+                            if (value.length > 9) {
+                                formattedValue += '-' + value.substring(9, 11);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            e.target.value = formattedValue;
+        });
+        
+        phoneInput.addEventListener('keydown', function(e) {
+            // Разрешаем backspace, delete, tab, escape, enter
+            if ([8, 9, 13, 27, 46].indexOf(e.keyCode) !== -1 ||
+                // Ctrl+A, Command+A
+                (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) ||
+                // home, end, left, right
+                (e.keyCode >= 35 && e.keyCode <= 39)) {
+                return;
+            }
+            // Запрещаем ввод букв и спецсимволов
+            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && 
+                (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+        
+        phoneInput.addEventListener('paste', function(e) {
+            e.preventDefault();
+            let text = e.clipboardData.getData('text');
+            let value = text.replace(/\D/g, '').substring(0, 11);
+            
+            let formattedValue = '';
+            if (value.length > 0) {
+                formattedValue = '+' + value;
+                if (value.length > 1) {
+                    formattedValue = '+7 (' + value.substring(1, 4);
+                    if (value.length > 4) {
+                        formattedValue += ') ' + value.substring(4, 7);
+                        if (value.length > 7) {
+                            formattedValue += '-' + value.substring(7, 9);
+                            if (value.length > 9) {
+                                formattedValue += '-' + value.substring(9, 11);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            e.target.value = formattedValue;
+        });
+    });
+    </script>
 
     <?php endif; ?>
 </div>
