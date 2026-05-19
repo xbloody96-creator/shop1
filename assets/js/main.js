@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   МАГАЗИН — Enhanced JavaScript
+   МАГАЗИН — Enhanced JavaScript (ИСПРАВЛЕННЫЙ)
    ═══════════════════════════════════════════ */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -79,13 +79,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (q.length < 2) { suggBox.classList.remove('open'); return; }
       debTimer = setTimeout(async () => {
         try {
-          const res  = await fetch(`/shop/api/search_suggest.php?q=${encodeURIComponent(q)}`);
+          const res  = await fetch(`/api/search_suggest.php?q=${encodeURIComponent(q)}`);
           const data = await res.json();
           if (!data.length) { suggBox.classList.remove('open'); return; }
           suggBox.innerHTML = data.map(item => `
-            <a class="suggestion-item" href="/shop/product.php?id=${item.id}">
+            <a class="suggestion-item" href="/product.php?id=${item.id}">
               ${item.main_image
-                ? `<img src="/shop/uploads/${item.main_image}" alt="" loading="lazy">`
+                ? `<img src="/uploads/${item.main_image}" alt="" loading="lazy">`
                 : `<div style="width:38px;height:38px;background:var(--surface3);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">📦</div>`}
               <span>${escHtml(item.name)}</span>
               <strong>${fmtPrice(item.price)} ₽</strong>
@@ -114,24 +114,37 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   if (mainImg) mainImg.style.transition = 'opacity 0.12s ease';
 
-  // ── Cart Add (AJAX) ────────────────────────
+  // ═══════════════════════════════════════════
+  // ── Cart Add (AJAX) — ИСПРАВЛЕНО ───────────
+  // ═══════════════════════════════════════════
   document.querySelectorAll('.js-add-cart').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.preventDefault();
       const id = btn.dataset.productId;
       const orig = btn.textContent;
-      btn.textContent = '...'; btn.disabled = true;
+      btn.textContent = '...';
+      btn.disabled = true;
+
       try {
-        const res  = await fetch('/shop/api/cart_add.php', {
+        // ✅ Отправляем как form-data (совместимо с PHP $_POST)
+        const params = new URLSearchParams();
+        params.append('product_id', id);
+        params.append('quantity', '1');
+
+        const res = await fetch('/api/cart_add.php', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ product_id: id, quantity: 1 })
+          credentials: 'include', // ✅ Передаёт PHPSESSID для авторизации
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params
         });
+
         const data = await res.json();
-        if (data.ok) {
+
+        // ✅ Проверяем data.success (а не data.ok)
+        if (data.success) {
           btn.textContent = '✓ Добавлено';
           btn.style.background = 'var(--success)';
-          updateCartBadge(data.cart_count);
+          if (typeof updateCartBadge === 'function') updateCartBadge(data.cart_count);
           toast('Товар добавлен в корзину 🛒', 'success');
           setTimeout(() => {
             btn.textContent = orig;
@@ -141,41 +154,59 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (data.redirect) {
           window.location.href = data.redirect;
         } else {
-          btn.textContent = orig; btn.disabled = false;
-          toast(data.message || 'Ошибка', 'error');
+          btn.textContent = orig;
+          btn.disabled = false;
+          toast(data.error || data.message || 'Ошибка', 'error');
         }
-      } catch(e) {
-        btn.textContent = orig; btn.disabled = false;
+      } catch (e) {
+        btn.textContent = orig;
+        btn.disabled = false;
         toast('Ошибка соединения', 'error');
+        console.error('Cart AJAX error:', e);
       }
     });
   });
 
-  // ── Favorites (AJAX) ──────────────────────
+  // ═══════════════════════════════════════════
+  // ── Favorites (AJAX) — ИСПРАВЛЕНО ──────────
+  // ═══════════════════════════════════════════
   document.querySelectorAll('.js-add-fav').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.preventDefault();
       const id = btn.dataset.productId;
+
       try {
-        const res  = await fetch('/shop/api/fav_toggle.php', {
+        const params = new URLSearchParams();
+        params.append('product_id', id);
+
+        const res = await fetch('/api/fav_toggle.php', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ product_id: id })
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params
         });
+
         const data = await res.json();
-        if (data.ok) {
-          // Обновляем все кнопки с этим productId
+
+        // ✅ Проверяем data.success (а не data.ok)
+        if (data.success) {
           document.querySelectorAll(`.js-add-fav[data-product-id="${id}"]`).forEach(b => {
             b.textContent = data.added ? '❤️' : '🤍';
             if (data.added) b.classList.add('active'); else b.classList.remove('active');
           });
           toast(data.added ? 'Добавлено в избранное ❤️' : 'Убрано из избранного', 'success');
-        } else if (data.redirect) { window.location.href = data.redirect; }
-      } catch(e) {}
+        } else if (data.redirect) {
+          window.location.href = data.redirect;
+        }
+      } catch (e) {
+        console.error('Favorites error:', e);
+      }
     });
   });
 
-  // ── Cart Qty ───────────────────────────────
+  // ═══════════════════════════════════════════
+  // ── Cart Qty Update — ИСПРАВЛЕНО ───────────
+  // ═══════════════════════════════════════════
   document.querySelectorAll('.qty-minus').forEach(b => b.addEventListener('click', () => changeQty(b, -1)));
   document.querySelectorAll('.qty-plus').forEach(b  => b.addEventListener('click', () => changeQty(b, +1)));
 
@@ -184,24 +215,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!item) return;
     const cartId  = item.dataset.cartId;
     const qtyEl   = item.querySelector('.qty-value');
-    let qty = parseInt(qtyEl?.textContent || 1) + delta;
+    let qty = parseInt(qtyEl?.textContent || '1') + delta;
     if (qty < 1) qty = 1;
+
     try {
-      const res  = await fetch('/shop/api/cart_update.php', {
+      const params = new URLSearchParams();
+      params.append('cart_id', cartId);
+      params.append('quantity', qty);
+
+      const res = await fetch('/api/cart_update.php', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ cart_id: cartId, quantity: qty })
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params
       });
+
       const data = await res.json();
-      if (data.ok && qtyEl) { qtyEl.textContent = qty; recalcTotal(); }
-    } catch(e) {}
+
+      // ✅ Проверяем data.success
+      if (data.success && qtyEl) {
+        qtyEl.textContent = qty;
+        recalcTotal();
+        if (typeof updateCartBadge === 'function') updateCartBadge(data.cart_count);
+      }
+    } catch (e) {
+      console.error('Cart qty error:', e);
+    }
   }
 
   function recalcTotal() {
     let total = 0;
     document.querySelectorAll('[data-cart-price]').forEach(el => {
       const item = el.closest('[data-cart-id]');
-      const qty  = parseInt(item?.querySelector('.qty-value')?.textContent || 1);
+      const qty  = parseInt(item?.querySelector('.qty-value')?.textContent || '1');
       total += parseFloat(el.dataset.cartPrice) * qty;
     });
     const el = document.getElementById('cart-total');
@@ -217,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!badge) {
         badge = document.createElement('sup');
         badge.className = 'cart-badge';
-        cartB.querySelector('.icon').after(badge);
+        cartB.querySelector('.icon')?.after(badge);
       }
       badge.textContent = count;
     } else { badge?.remove(); }
@@ -262,7 +308,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminPrev  = document.getElementById('admin-img-preview');
   adminImg?.addEventListener('change', () => {
     const f = adminImg.files[0];
-    if (f && adminPrev) { const r = new FileReader(); r.onload = e => { adminPrev.src = e.target.result; adminPrev.style.display='block'; }; r.readAsDataURL(f); }
+    if (f && adminPrev) {
+      const r = new FileReader();
+      r.onload = e => { adminPrev.src = e.target.result; adminPrev.style.display='block'; };
+      r.readAsDataURL(f);
+    }
   });
 
   // ── Avatar Preview ─────────────────────────
@@ -270,7 +320,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const avPrev   = document.getElementById('avatar-preview');
   avInput?.addEventListener('change', () => {
     const f = avInput.files[0];
-    if (f && avPrev) { const r = new FileReader(); r.onload = e => { avPrev.src = e.target.result; avPrev.style.display='block'; }; r.readAsDataURL(f); }
+    if (f && avPrev) {
+      const r = new FileReader();
+      r.onload = e => { avPrev.src = e.target.result; avPrev.style.display='block'; };
+      r.readAsDataURL(f);
+    }
   });
 
   // ── Register password confirm ──────────────
