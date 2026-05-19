@@ -33,6 +33,10 @@
                 <a href="contact.php" class="btn-secondary" style="font-size:0.8rem;padding:8px 16px">Написать нам</a>
             </div>
         </div>
+        <div class="footer-col">
+            <h4>Мы на карте</h4>
+            <div id="map" style="width:100%;height:160px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-sm)"></div>
+        </div>
     </div>
     
     <!-- Разделитель -->
@@ -49,11 +53,6 @@
             <a href="contact.php" style="color:var(--text-muted);font-size:0.8rem;text-decoration:none">📞 Поддержка</a>
         </div>
     </div>
-</div>
-
-<!-- Карта внизу страницы -->
-<div style="margin-top:40px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)">
-    <div id="map" style="width:100%;height:400px"></div>
 </div>
 </footer>
 
