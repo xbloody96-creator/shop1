@@ -50,12 +50,12 @@
         </div>
     </div>
 </div>
-</footer>
 
-<!-- ─── КАРТА (ПЛАВАЮЩАЯ, СПРАВА СНИЗУ) ─── -->
-<div id="floating-map" style="position:fixed;bottom:20px;right:20px;width:320px;height:240px;z-index:1000;border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.3);border:3px solid var(--accent);background:#fff">
-    <div id="map" style="width:100%;height:100%"></div>
+<!-- Карта внизу страницы -->
+<div style="margin-top:40px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)">
+    <div id="map" style="width:100%;height:400px"></div>
 </div>
+</footer>
 
 <div id="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999"></div>
 
