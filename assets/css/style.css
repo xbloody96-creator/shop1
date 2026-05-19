@@ -305,6 +305,14 @@ input, select, textarea { font-family: var(--font-b); }
   display: flex; align-items: center; padding: 0 80px;
   position: relative; overflow: hidden;
   background: linear-gradient(135deg, #1a1a2e 0%, #0f0f18 100%);
+  opacity: 0;
+  transition: opacity 0.6s ease-in-out;
+  pointer-events: none;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: all;
+  z-index: 2;
 }
 .slide-bg { position: absolute; inset: 0; opacity: 0.5; }
 .slide-bg-1 { background: radial-gradient(circle at 70% 50%, rgba(255,45,59,0.15) 0%, transparent 60%); }
