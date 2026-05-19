@@ -1,1 +1,27 @@
-Nothing should be ignored based on the provided file changes. The modification of 'checkout.php' represents a source code file change, which does not require any new ignore rules. Since there are no build artifacts, dependencies, or temporary files in the changes, no additional rules are needed.
+# Examples 1:
+# Project with only source/config files - no artifacts
+
+# Example 2:
+# Project with artifacts would include patterns like:
+# *.pyc
+# dist/
+# .env.local
+# .vscode/
+# build/
+# node_modules/
+# venv/
+# .venv/
+# __pycache__/
+# .DS_Store
+# Thumbs.db
+# *.log
+# *.tmp
+# *.swp
+# .idea/
+
+# Current project has only CSS and PHP source files, no artifacts to ignore
+# assets/css/style.css - source file
+# includes/product_card.php - source file
+
+# No build artifacts, dependencies, or temp files detected in changes
+# Therefore, no .gitignore rules needed for this project state

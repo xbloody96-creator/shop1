@@ -478,12 +478,12 @@ input, select, textarea { font-family: var(--font-b); }
   background: var(--surface2); padding: 18px; overflow: hidden; position: relative;
 }
 .product-card-img {
-  width: 100%; height: 150px; object-fit: contain;
+  width: 100%; height: 200px; object-fit: contain;
   transition: transform var(--tr-slow); display: block;
 }
 .product-card:hover .product-card-img { transform: scale(1.07); }
 .product-card-img-placeholder {
-  width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; font-size: 3rem;
+  width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; font-size: 3rem;
 }
 
 .product-card-actions {

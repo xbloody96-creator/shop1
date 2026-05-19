@@ -39,7 +39,7 @@ $pct   = $hasDiscount ? round(100 - ($product['price'] / $product['old_price'] *
              alt="<?= htmlspecialchars($product['name']) ?>" 
              class="product-card-img"
              loading="lazy"
-             style="pointer-events:none;width:100%;height:auto;display:block">
+             style="pointer-events:none;width:100%;display:block">
         <?php else: ?>
         <div class="product-card-img-placeholder" style="pointer-events:none;width:100%;height:200px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:4rem">📦</div>
         <?php endif; ?>
