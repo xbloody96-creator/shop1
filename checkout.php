@@ -31,12 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Некорректный email';
     if (empty($address)) $errors[] = 'Введите адрес доставки';
     
-    // Валидация телефона: только цифры, от 10 до 11 символов
+    // Валидация телефона: только цифры, ровно 11 символов
     $cleanPhone = preg_replace('/\D/', '', $phone);
     if (empty($cleanPhone)) {
         $errors[] = 'Введите номер телефона';
-    } elseif (strlen($cleanPhone) < 10 || strlen($cleanPhone) > 11) {
-        $errors[] = 'Номер телефона должен содержать от 10 до 11 цифр';
+    } elseif (strlen($cleanPhone) !== 11) {
+        $errors[] = 'Номер телефона должен содержать ровно 11 цифр';
     }
     
     if (empty($errors)) {
@@ -75,22 +75,11 @@ require_once __DIR__ . '/includes/header.php';
     gap: 28px;
 }
 .checkout-form-section {
-    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    background: var(--surface);
     border: 1px solid var(--border2);
     border-radius: var(--radius-lg);
     padding: 28px;
     margin-bottom: 20px;
-    position: relative;
-    overflow: hidden;
-}
-.checkout-form-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
 }
 .checkout-section-title {
     font-family: var(--font-d);
@@ -142,7 +131,7 @@ require_once __DIR__ . '/includes/header.php';
     resize: vertical;
 }
 .checkout-summary {
-    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    background: var(--surface);
     border: 1px solid var(--border2);
     border-radius: var(--radius-lg);
     padding: 24px;
@@ -208,9 +197,9 @@ require_once __DIR__ . '/includes/header.php';
 .checkout-submit-btn {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    background: var(--accent);
     color: #fff;
-    border: none;
+    border: 2px solid var(--accent);
     border-radius: var(--radius-md);
     font-family: var(--font-d);
     font-size: 0.9rem;
@@ -220,11 +209,12 @@ require_once __DIR__ . '/includes/header.php';
     cursor: pointer;
     transition: all var(--tr);
     margin-top: 20px;
-    box-shadow: var(--glow-red);
 }
 .checkout-submit-btn:hover {
+    background: #fff;
+    color: var(--accent);
     transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(255,45,59,0.5);
+    box-shadow: 0 12px 40px rgba(255,45,59,0.3);
 }
 .checkout-submit-btn:active {
     transform: translateY(-1px);
