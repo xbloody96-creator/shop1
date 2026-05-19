@@ -30,32 +30,39 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Hero Slider ────────────────────────────
-  const track    = document.querySelector('.slider-track');
-  const dots     = document.querySelectorAll('.slider-dot');
-  const prevBtn  = document.querySelector('.slider-prev');
-  const nextBtn  = document.querySelector('.slider-next');
-  let   cur      = 0;
-  let   autoPlay = null;
-  let   isTouch  = false;
-  let   touchX   = 0;
+  const sliderContainer = document.querySelector('.slider-container');
+  const slides         = document.querySelectorAll('.slide');
+  const dots           = document.querySelectorAll('.dot');
+  const prevBtn        = document.querySelector('.slider-arrow.prev');
+  const nextBtn        = document.querySelector('.slider-arrow.next');
+  let   cur            = 0;
+  let   autoPlay       = null;
+  let   isTouch        = false;
+  let   touchX         = 0;
 
   function goTo(idx) {
-    if (!track) return;
-    const total = track.children.length;
+    if (!sliderContainer || slides.length === 0) return;
+    const total = slides.length;
     cur = ((idx % total) + total) % total;
-    track.style.transform = `translateX(-${cur * 100}%)`;
+    
+    // Update slides visibility
+    slides.forEach((slide, i) => {
+      slide.classList.toggle('active', i === cur);
+    });
+    
+    // Update dots
     dots.forEach((d, i) => d.classList.toggle('active', i === cur));
   }
 
-  if (track && track.children.length > 1) {
+  if (slides.length > 1) {
     goTo(0);
     dots.forEach((d, i) => d.addEventListener('click', () => { goTo(i); resetAuto(); }));
     prevBtn?.addEventListener('click', () => { goTo(cur - 1); resetAuto(); });
     nextBtn?.addEventListener('click', () => { goTo(cur + 1); resetAuto(); });
 
     // Touch swipe
-    track.addEventListener('touchstart', e => { isTouch = true; touchX = e.touches[0].clientX; }, {passive: true});
-    track.addEventListener('touchend',   e => {
+    sliderContainer.addEventListener('touchstart', e => { isTouch = true; touchX = e.touches[0].clientX; }, {passive: true});
+    sliderContainer.addEventListener('touchend',   e => {
       if (!isTouch) return;
       const diff = touchX - e.changedTouches[0].clientX;
       if (Math.abs(diff) > 40) { diff > 0 ? goTo(cur + 1) : goTo(cur - 1); resetAuto(); }
