@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/check_2fa.php';
 requireLogin();
+require2FAVerified();
 
 $userId = $_SESSION['user_id'];
 $user   = getCurrentUser();
