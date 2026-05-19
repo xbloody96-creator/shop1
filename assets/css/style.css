@@ -1058,7 +1058,7 @@ textarea.form-control { resize: vertical; min-height: 96px; }
 ══════════════════════════════════════════════════ */
 .site-footer { background: var(--surface); border-top: 1px solid var(--border); margin-top: 60px; }
 .footer-accent-bar { height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2), var(--gold)); }
-.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 36px; padding: 44px 20px; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr; gap: 36px; padding: 44px 20px; }
 .footer-col .logo { margin-bottom: 12px; }
 .footer-desc { color: var(--text3); font-size: 0.82rem; line-height: 1.7; margin-bottom: 14px; }
 .footer-socials { display: flex; gap: 7px; }
