@@ -45,11 +45,11 @@ require_once __DIR__ . '/includes/header.php';
     <div>
       <?php foreach ($cartItems as $item): ?>
       <div class="cart-item" data-cart-id="<?= $item['cart_id'] ?>" data-cart-price="<?= $item['price'] ?>">
-        <a href="/product.php?id=<?= $item['id'] ?>">
+        <a href="/product.php?id=<?= $item['id'] ?>" class="cart-item-link">
           <?php if ($item['main_image']): ?>
-          <img src="/uploads/<?= htmlspecialchars($item['main_image']) ?>" alt="">
+          <img src="/uploads/<?= htmlspecialchars($item['main_image']) ?>" alt="" class="cart-item-img">
           <?php else: ?>
-          <div style="width:90px;height:90px;background:var(--surface2);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:2rem">📦</div>
+          <div class="cart-item-ph">📦</div>
           <?php endif; ?>
         </a>
         <div class="cart-item-info">
