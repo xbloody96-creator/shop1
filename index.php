@@ -9,7 +9,62 @@ $promotions      = $pdo->query("SELECT * FROM promotions WHERE is_active=1 LIMIT
 $latestNews      = $pdo->query("SELECT * FROM news WHERE is_active=1 ORDER BY created_at DESC LIMIT 3")->fetchAll();
 $catIcons = ['📱','💻','📺','🎧','⌨️','🖥️','📷',''];
 require_once __DIR__ . '/includes/header.php';
+
+// Товары для бегущей строки (берём больше для плавности)
+$marqueeProducts = $pdo->query("SELECT * FROM products WHERE is_active=1 ORDER BY RAND() LIMIT 12")->fetchAll();
 ?>
+
+<!-- ─── ТОВАРЫ С БЕГУЩЕЙ СТРОКОЙ (MARQUEE) ─── -->
+<?php if (!empty($marqueeProducts)): ?>
+<section class="products-marquee-section">
+    <div class="products-marquee-track" id="productsMarquee">
+        <!-- Дублируем товары для бесконечной прокрутки -->
+        <?php foreach ($marqueeProducts as $product): ?>
+        <a href="product.php?id=<?= $product['id'] ?>" class="marquee-product-card">
+            <div class="marquee-product-image">
+                <?php if ($product['main_image']): ?>
+                <img src="uploads/<?= htmlspecialchars($product['main_image']) ?>" 
+                     alt="<?= htmlspecialchars($product['name']) ?>"
+                     onerror="this.style.display='none'; this.parentElement.querySelector('.marquee-product-placeholder').style.display='flex'">
+                <?php endif; ?>
+                <div class="marquee-product-placeholder">📦</div>
+            </div>
+            <div class="marquee-product-info">
+                <h3 class="marquee-product-title"><?= htmlspecialchars($product['name']) ?></h3>
+                <div class="marquee-product-price">
+                    <span class="price-current"><?= number_format($product['price'], 0, '', ' ') ?> ₽</span>
+                    <?php if ($product['old_price'] && $product['old_price'] > $product['price']): ?>
+                    <span class="price-old"><?= number_format($product['old_price'], 0, '', ' ') ?> ₽</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </a>
+        <?php endforeach; ?>
+        <!-- Дубликат для бесшовной прокрутки -->
+        <?php foreach ($marqueeProducts as $product): ?>
+        <a href="product.php?id=<?= $product['id'] ?>" class="marquee-product-card">
+            <div class="marquee-product-image">
+                <?php if ($product['main_image']): ?>
+                <img src="uploads/<?= htmlspecialchars($product['main_image']) ?>" 
+                     alt="<?= htmlspecialchars($product['name']) ?>"
+                     onerror="this.style.display='none'; this.parentElement.querySelector('.marquee-product-placeholder').style.display='flex'">
+                <?php endif; ?>
+                <div class="marquee-product-placeholder">📦</div>
+            </div>
+            <div class="marquee-product-info">
+                <h3 class="marquee-product-title"><?= htmlspecialchars($product['name']) ?></h3>
+                <div class="marquee-product-price">
+                    <span class="price-current"><?= number_format($product['price'], 0, '', ' ') ?> ₽</span>
+                    <?php if ($product['old_price'] && $product['old_price'] > $product['price']): ?>
+                    <span class="price-old"><?= number_format($product['old_price'], 0, '', ' ') ?> ₽</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </a>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>
 
 <!-- ─── HERO SLIDER ─── -->
 <?php if (!empty($sliderProducts)): ?>

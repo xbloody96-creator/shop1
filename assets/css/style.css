@@ -289,6 +289,134 @@ input, select, textarea { font-family: var(--font-b); }
 .site-main { min-height: 70vh; }
 
 /* ══════════════════════════════════════════════════
+   PRODUCTS MARQUEE — Бегущая строка товаров
+══════════════════════════════════════════════════ */
+.products-marquee-section {
+  position: relative;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  padding: 20px 0;
+}
+
+.products-marquee-track {
+  display: flex;
+  gap: 24px;
+  animation: marquee-scroll 40s linear infinite;
+  will-change: transform;
+}
+
+.products-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.marquee-product-card {
+  flex: 0 0 220px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all var(--tr);
+  text-decoration: none;
+}
+
+.marquee-product-card:hover {
+  background: var(--surface3);
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.marquee-product-image {
+  width: 100%;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+}
+
+.marquee-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform var(--tr-slow);
+}
+
+.marquee-product-card:hover .marquee-product-image img {
+  transform: scale(1.08);
+}
+
+.marquee-product-placeholder {
+  font-size: 3rem;
+  opacity: 0.5;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.marquee-product-image img[src=""], 
+.marquee-product-image img:not([src]) {
+  display: none;
+}
+
+.marquee-product-image img[style*="display: none"] + .marquee-product-placeholder {
+  display: flex;
+}
+
+.marquee-product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.marquee-product-title {
+  font-family: var(--font-b);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.marquee-product-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.price-current {
+  font-family: var(--font-d);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.price-old {
+  font-size: 0.85rem;
+  color: var(--text3);
+  text-decoration: line-through;
+}
+
+/* ══════════════════════════════════════════════════
    HERO SLIDER — Premium Redesign
 ══════════════════════════════════════════════════ */
 .hero-slider { 
@@ -1197,6 +1325,10 @@ body.high-contrast { --bg:#000; --surface:#111; --text:#fff; --border:rgba(255,2
   .admin-layout { grid-template-columns: 1fr; }
   .promo-strip { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+  
+  /* Marquee адаптив для планшетов */
+  .marquee-product-card { flex: 0 0 180px; }
+  .marquee-product-image { height: 130px; }
 }
 @media (max-width: 480px) {
   .products-grid { grid-template-columns: 1fr; }
@@ -1206,4 +1338,13 @@ body.high-contrast { --bg:#000; --surface:#111; --text:#fff; --border:rgba(255,2
   .slide-content h2 { font-size: 1.3rem; }
   .slide-content p { font-size: 0.8rem; }
   .slide-price { font-size: 1.5rem; }
+  
+  /* Marquee адаптив для мобильных */
+  .products-marquee-section { padding: 14px 0; }
+  .products-marquee-track { gap: 12px; }
+  .marquee-product-card { flex: 0 0 150px; padding: 10px; }
+  .marquee-product-image { height: 100px; }
+  .marquee-product-title { font-size: 0.75rem; }
+  .price-current { font-size: 0.95rem; }
+  .price-old { font-size: 0.75rem; }
 }

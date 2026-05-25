@@ -74,6 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
     startAuto();
   }
 
+  // ── Products Marquee — Пауза при наведении ───────────────
+  const marqueeTrack = document.getElementById('productsMarquee');
+  if (marqueeTrack) {
+    // CSS уже обрабатывает паузу при наведении через animation-play-state
+    // Дополнительный JS для улучшения UX не требуется
+  }
+
   // ── Search Suggestions ─────────────────────
   const searchIn  = document.getElementById('header-search-input');
   const suggBox   = document.getElementById('search-suggestions');
