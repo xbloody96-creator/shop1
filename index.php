@@ -17,98 +17,71 @@ $marqueeProducts = $pdo->query("SELECT * FROM products WHERE is_active=1 ORDER B
 <!-- ─── ТОВАРЫ С БЕГУЩЕЙ СТРОКОЙ (MARQUEE) ─── -->
 <?php if (!empty($marqueeProducts)): ?>
 <section class="products-marquee-section">
-    <div class="products-marquee-track" id="productsMarquee">
-        <!-- Дублируем товары для бесконечной прокрутки -->
-        <?php foreach ($marqueeProducts as $product): ?>
-        <a href="product.php?id=<?= $product['id'] ?>" class="marquee-product-card">
-            <div class="marquee-product-image">
-                <?php if ($product['main_image']): ?>
-                <img src="uploads/<?= htmlspecialchars($product['main_image']) ?>" 
-                     alt="<?= htmlspecialchars($product['name']) ?>"
-                     onerror="this.style.display='none'; this.parentElement.querySelector('.marquee-product-placeholder').style.display='flex'">
+    <div class="products-marquee-wrapper">
+        <div class="products-marquee-track" id="productsMarquee">
+            <!-- Дублируем товары для бесконечной прокрутки -->
+            <?php foreach ($marqueeProducts as $product): 
+                $discount = 0;
+                if ($product['old_price'] && $product['old_price'] > $product['price']) {
+                    $discount = round((1 - $product['price'] / $product['old_price']) * 100);
+                }
+            ?>
+            <a href="product.php?id=<?= $product['id'] ?>" class="marquee-product-card">
+                <?php if ($discount > 0): ?>
+                <span class="marquee-discount-badge">-<?= $discount ?>%</span>
                 <?php endif; ?>
-                <div class="marquee-product-placeholder">📦</div>
-            </div>
-            <div class="marquee-product-info">
-                <h3 class="marquee-product-title"><?= htmlspecialchars($product['name']) ?></h3>
-                <div class="marquee-product-price">
-                    <span class="price-current"><?= number_format($product['price'], 0, '', ' ') ?> ₽</span>
-                    <?php if ($product['old_price'] && $product['old_price'] > $product['price']): ?>
-                    <span class="price-old"><?= number_format($product['old_price'], 0, '', ' ') ?> ₽</span>
+                <div class="marquee-product-image">
+                    <?php if ($product['main_image']): ?>
+                    <img src="uploads/<?= htmlspecialchars($product['main_image']) ?>" 
+                         alt="<?= htmlspecialchars($product['name']) ?>"
+                         onerror="this.style.display='none'; this.parentElement.querySelector('.marquee-product-placeholder').style.display='flex'">
                     <?php endif; ?>
+                    <div class="marquee-product-placeholder">📦</div>
                 </div>
-            </div>
-        </a>
-        <?php endforeach; ?>
-        <!-- Дубликат для бесшовной прокрутки -->
-        <?php foreach ($marqueeProducts as $product): ?>
-        <a href="product.php?id=<?= $product['id'] ?>" class="marquee-product-card">
-            <div class="marquee-product-image">
-                <?php if ($product['main_image']): ?>
-                <img src="uploads/<?= htmlspecialchars($product['main_image']) ?>" 
-                     alt="<?= htmlspecialchars($product['name']) ?>"
-                     onerror="this.style.display='none'; this.parentElement.querySelector('.marquee-product-placeholder').style.display='flex'">
+                <div class="marquee-product-info">
+                    <h3 class="marquee-product-title"><?= htmlspecialchars($product['name']) ?></h3>
+                    <div class="marquee-product-price">
+                        <span class="price-current"><?= number_format($product['price'], 0, '', ' ') ?> ₽</span>
+                        <?php if ($product['old_price'] && $product['old_price'] > $product['price']): ?>
+                        <span class="price-old"><?= number_format($product['old_price'], 0, '', ' ') ?> ₽</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </a>
+            <?php endforeach; ?>
+            <!-- Дубликат для бесшовной прокрутки -->
+            <?php foreach ($marqueeProducts as $product): 
+                $discount = 0;
+                if ($product['old_price'] && $product['old_price'] > $product['price']) {
+                    $discount = round((1 - $product['price'] / $product['old_price']) * 100);
+                }
+            ?>
+            <a href="product.php?id=<?= $product['id'] ?>" class="marquee-product-card">
+                <?php if ($discount > 0): ?>
+                <span class="marquee-discount-badge">-<?= $discount ?>%</span>
                 <?php endif; ?>
-                <div class="marquee-product-placeholder">📦</div>
-            </div>
-            <div class="marquee-product-info">
-                <h3 class="marquee-product-title"><?= htmlspecialchars($product['name']) ?></h3>
-                <div class="marquee-product-price">
-                    <span class="price-current"><?= number_format($product['price'], 0, '', ' ') ?> ₽</span>
-                    <?php if ($product['old_price'] && $product['old_price'] > $product['price']): ?>
-                    <span class="price-old"><?= number_format($product['old_price'], 0, '', ' ') ?> ₽</span>
+                <div class="marquee-product-image">
+                    <?php if ($product['main_image']): ?>
+                    <img src="uploads/<?= htmlspecialchars($product['main_image']) ?>" 
+                         alt="<?= htmlspecialchars($product['name']) ?>"
+                         onerror="this.style.display='none'; this.parentElement.querySelector('.marquee-product-placeholder').style.display='flex'">
                     <?php endif; ?>
+                    <div class="marquee-product-placeholder">📦</div>
                 </div>
-            </div>
-        </a>
-        <?php endforeach; ?>
+                <div class="marquee-product-info">
+                    <h3 class="marquee-product-title"><?= htmlspecialchars($product['name']) ?></h3>
+                    <div class="marquee-product-price">
+                        <span class="price-current"><?= number_format($product['price'], 0, '', ' ') ?> ₽</span>
+                        <?php if ($product['old_price'] && $product['old_price'] > $product['price']): ?>
+                        <span class="price-old"><?= number_format($product['old_price'], 0, '', ' ') ?> ₽</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </a>
+            <?php endforeach; ?>
+        </div>
     </div>
 </section>
-<?php endif; ?>
-
-<!-- ─── HERO SLIDER ─── -->
-<?php if (!empty($sliderProducts)): ?>
-<div class="hero-slider">
-    <div class="slider-container">
-        <?php foreach ($sliderProducts as $i => $item): ?>
-        <div class="slide <?= $i===0?'active':'' ?>">
-            <div class="slide-bg slide-bg-<?= ($i % 3) + 1 ?>"></div>
-            <div class="slide-grid"></div>
-            <div class="slide-content">
-                <div class="slide-tag">🔥 Хит продаж</div>
-                <h2 class="slide-title"><?= htmlspecialchars($item['name']) ?></h2>
-                <p class="slide-description"><?= htmlspecialchars(mb_substr($item['description'] ?? '', 0, 120)) ?></p>
-                <div class="slide-prices">
-                    <span class="slide-price"><?= number_format($item['price'], 0, '', ' ') ?> ₽</span>
-                    <?php if ($item['old_price'] && $item['old_price'] > $item['price']): ?>
-                    <span class="slide-old"><?= number_format($item['old_price'], 0, '', ' ') ?> ₽</span>
-                    <span class="slide-pct">-<?= round((1 - $item['price'] / $item['old_price']) * 100) ?>%</span>
-                    <?php endif; ?>
-                </div>
-                <a href="product.php?id=<?= $item['id'] ?>" class="slide-btn">
-                    <span>Подробнее</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </a>
-            </div>
-            <?php if ($item['main_image']): ?>
-            <div class="slide-image-wrap">
-                <img src="uploads/<?= htmlspecialchars($item['main_image']) ?>"
-                     alt="<?= htmlspecialchars($item['name']) ?>" 
-                     class="slide-image"
-                     onerror="this.style.display='none'">
-            </div>
-            <?php endif; ?>
-        </div>
-        <?php endforeach; ?>
-    </div>
-    <button class="slider-prev" aria-label="Предыдущий слайд">‹</button>
-    <button class="slider-next" aria-label="Следующий слайд">›</button>
-    <div class="slider-controls">
-        <?php foreach ($sliderProducts as $i => $_): ?>
-        <button class="slider-dot <?= $i===0?'active':'' ?>" data-index="<?= $i ?>"></button>
-        <?php endforeach; ?>
-    </div>
-</div>
 <?php endif; ?>
 
 <div class="container">
